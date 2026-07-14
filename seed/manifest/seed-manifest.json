@@ -1,27 +1,33 @@
 {
   "version": "2026-07-07",
-  "status": "template",
-  "note": "Replace counts and checksums after inserting real frozen seed data.",
+  "status": "frozen",
+  "source": "02_seed_extraction_workbook_v0_1_20260707.md",
+  "extractedAt": "2026-07-14",
+  "note": "Mechanically extracted from the approved seed extraction workbook. Do not edit values manually.",
   "files": [
     {
       "name": "food-master.json",
+      "sourceSheet": "FoodMasterApproved",
       "expectedRows": 40,
-      "checksum": "TODO"
+      "checksum": "sha256:3dba53b652f7a43a8193cfc6b14a9c5c5ad29355942b4f1a4d2a4fe8a69fa76f"
     },
     {
       "name": "nutrient-amount.json",
+      "sourceSheet": "NutrientAmountExtraction",
       "expectedRows": 640,
-      "checksum": "TODO"
+      "checksum": "sha256:1c9bb98f646025f263d57f3d7f3d511d7fe526097314d1c3501589091812a979"
     },
     {
       "name": "nutrient-reference.json",
+      "sourceSheet": "NutrientReferenceExtraction",
       "expectedRows": 330,
-      "checksum": "TODO"
+      "checksum": "sha256:39205638b7ae5ff1bd6a1224ddd7eb6fbed91b1c1555fe2fe0da583f81a60589"
     },
     {
       "name": "unit-conversion.json",
-      "expectedRows": null,
-      "checksum": "TODO"
+      "sourceSheet": "UnitConversionSourceFill",
+      "expectedRows": 6,
+      "checksum": "sha256:c105d0d17025f91667ad7266a09a68edabee85bf64cd309778f9c4c95b6c41aa"
     }
   ]
 }
