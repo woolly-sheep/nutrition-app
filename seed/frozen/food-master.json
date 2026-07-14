@@ -1,1 +1,362 @@
-[]
+[
+  {
+    "food_id": "food_rice_cooked_white_001",
+    "display_name": "白ごはん",
+    "official_food_code": "01088",
+    "official_food_name": "穀類/こめ/［水稲めし］/精白米/うるち米",
+    "approved_state": "cooked",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_rice_brown_001",
+    "display_name": "玄米",
+    "official_food_code": "01085",
+    "official_food_name": "こめ［水稲めし］玄米",
+    "approved_state": "cooked",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_bread_white_001",
+    "display_name": "食パン",
+    "official_food_code": "01026",
+    "official_food_name": "こむぎ［パン類］食パン",
+    "approved_state": "processed",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_udon_boiled_001",
+    "display_name": "うどん",
+    "official_food_code": "01045",
+    "official_food_name": "こむぎ［うどん・そうめん類］うどん ゆで",
+    "approved_state": "boiled",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_soba_boiled_001",
+    "display_name": "そば",
+    "official_food_code": "01128",
+    "official_food_name": "そば そば ゆで",
+    "approved_state": "boiled",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_pasta_boiled_001",
+    "display_name": "パスタ",
+    "official_food_code": "01064",
+    "official_food_name": "こむぎ［マカロニ・スパゲッティ類］マカロニ・スパゲッティ ゆで",
+    "approved_state": "boiled",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_egg_raw_001",
+    "display_name": "卵",
+    "official_food_code": "12004",
+    "official_food_name": "卵類/鶏卵/全卵/生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_chicken_breast_001",
+    "display_name": "鶏むね肉",
+    "official_food_code": "11220",
+    "official_food_name": "＜鳥肉類＞ にわとり［若どり・主品目］むね 皮なし 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_chicken_thigh_001",
+    "display_name": "鶏もも肉",
+    "official_food_code": "11224",
+    "official_food_name": "＜鳥肉類＞ にわとり［若どり・主品目］もも 皮なし 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_pork_loin_001",
+    "display_name": "豚ロース",
+    "official_food_code": "11123",
+    "official_food_name": "＜畜肉類＞ ぶた［大型種肉］ロース 脂身つき 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_beef_lean_001",
+    "display_name": "牛赤身肉",
+    "official_food_code": "11077",
+    "official_food_name": "＜畜肉類＞ うし［輸入牛肉］もも 赤肉 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_salmon_001",
+    "display_name": "鮭",
+    "official_food_code": "10134",
+    "official_food_name": "＜魚類＞（さけ・ます類）しろさけ 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_mackerel_001",
+    "display_name": "さば",
+    "official_food_code": "10154",
+    "official_food_name": "＜魚類＞（さば類）まさば 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_tuna_001",
+    "display_name": "まぐろ",
+    "official_food_code": "10252",
+    "official_food_name": "＜魚類＞（まぐろ類）きはだ 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_tofu_firm_001",
+    "display_name": "木綿豆腐",
+    "official_food_code": "04032",
+    "official_food_name": "だいず［豆腐・油揚げ類］木綿豆腐",
+    "approved_state": "processed",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_nattoo_001",
+    "display_name": "納豆",
+    "official_food_code": "04046",
+    "official_food_name": "だいず［納豆類］糸引き納豆",
+    "approved_state": "processed",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_spinach_boiled_001",
+    "display_name": "ほうれん草",
+    "official_food_code": "06268",
+    "official_food_name": "ほうれんそう 葉 通年平均 ゆで",
+    "approved_state": "boiled",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_broccoli_boiled_001",
+    "display_name": "ブロッコリー",
+    "official_food_code": "06264",
+    "official_food_name": "ブロッコリー 花序 ゆで",
+    "approved_state": "boiled",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_carrot_raw_001",
+    "display_name": "にんじん",
+    "official_food_code": "06214",
+    "official_food_name": "にんじん 根 皮なし 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_tomato_raw_001",
+    "display_name": "トマト",
+    "official_food_code": "06182",
+    "official_food_name": "赤色トマト 果実 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_cabbage_raw_001",
+    "display_name": "キャベツ",
+    "official_food_code": "06061",
+    "official_food_name": "キャベツ 結球葉 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_onion_raw_001",
+    "display_name": "玉ねぎ",
+    "official_food_code": "06153",
+    "official_food_name": "たまねぎ りん茎 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_sweet_potato_001",
+    "display_name": "さつまいも",
+    "official_food_code": "02007",
+    "official_food_name": "＜いも類＞（さつまいも類）さつまいも 塊根 皮なし 蒸し",
+    "approved_state": "cooked",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_banana_raw_001",
+    "display_name": "バナナ",
+    "official_food_code": "07107",
+    "official_food_name": "バナナ 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_apple_raw_001",
+    "display_name": "りんご",
+    "official_food_code": "07148",
+    "official_food_name": "りんご 皮なし 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_orange_raw_001",
+    "display_name": "オレンジ",
+    "official_food_code": "07040",
+    "official_food_name": "オレンジ ネーブル 砂じょう 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_kiwi_raw_001",
+    "display_name": "キウイ",
+    "official_food_code": "07054",
+    "official_food_name": "キウイフルーツ 緑肉種 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_milk_001",
+    "display_name": "牛乳",
+    "official_food_code": "13003",
+    "official_food_name": "乳類/普通牛乳",
+    "approved_state": "liquid",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_yogurt_plain_001",
+    "display_name": "ヨーグルト",
+    "official_food_code": "13025",
+    "official_food_name": "ヨーグルト 全脂無糖",
+    "approved_state": "processed",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_cheese_001",
+    "display_name": "チーズ",
+    "official_food_code": "13040",
+    "official_food_name": "プロセスチーズ",
+    "approved_state": "processed",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_wakame_001",
+    "display_name": "わかめ",
+    "official_food_code": "09045",
+    "official_food_name": "わかめ 湯通し塩蔵わかめ 塩抜き 生",
+    "approved_state": "processed",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_hijiki_001",
+    "display_name": "ひじき",
+    "official_food_code": "09051",
+    "official_food_name": "ひじき ほしひじき ステンレス釜 ゆで",
+    "approved_state": "cooked",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_shiitake_001",
+    "display_name": "しいたけ",
+    "official_food_code": "08039",
+    "official_food_name": "しいたけ 生しいたけ 菌床栽培 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_shimeji_001",
+    "display_name": "しめじ",
+    "official_food_code": "08016",
+    "official_food_name": "ぶなしめじ 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_sesame_001",
+    "display_name": "ごま",
+    "official_food_code": "05018",
+    "official_food_name": "ごま いり",
+    "approved_state": "processed",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_almond_001",
+    "display_name": "アーモンド",
+    "official_food_code": "05040",
+    "official_food_name": "アーモンド いり 無塩",
+    "approved_state": "processed",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_olive_oil_001",
+    "display_name": "オリーブオイル",
+    "official_food_code": "14001",
+    "official_food_name": "オリーブ油",
+    "approved_state": "processed",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_miso_001",
+    "display_name": "みそ",
+    "official_food_code": "17045",
+    "official_food_name": "米みそ 淡色辛みそ",
+    "approved_state": "processed",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_potato_001",
+    "display_name": "じゃがいも",
+    "official_food_code": "02017",
+    "official_food_name": "＜いも類＞じゃがいも 塊茎 皮なし 生",
+    "approved_state": "raw",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  },
+  {
+    "food_id": "food_komatsuna_001",
+    "display_name": "小松菜",
+    "official_food_code": "06087",
+    "official_food_name": "こまつな 葉 ゆで",
+    "approved_state": "boiled",
+    "source_status": "MEXT_public_doc",
+    "review_status": "approved_for_seed_review"
+  }
+]

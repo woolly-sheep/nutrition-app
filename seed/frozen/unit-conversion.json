@@ -1,9 +1,80 @@
-{
-  "standardInputUnit": "g",
-  "allowedHelperUnits": [],
-  "forbiddenAutoConversions": [
-    "piece",
-    "cup",
-    "pack"
-  ]
-}
+[
+  {
+    "unit_conversion_id": "uc_egg_1_piece",
+    "food_id": "food_egg_raw_001",
+    "display_name": "卵",
+    "display_unit": "1個",
+    "representative_weight_g": null,
+    "confidence_level": "medium",
+    "source_note": "MAFF食事バランスガイドは主菜SVを示すが、卵1個のg換算値ではない。",
+    "source_type": "public_source_insufficient",
+    "warning_code": "LOW_CONFIDENCE_CONVERSION",
+    "review_status": "use_explicit_grams_preferred",
+    "reviewer_note": "UnitConversion is optional support. Prefer user-entered grams when source is weak."
+  },
+  {
+    "unit_conversion_id": "uc_nattoo_1_pack",
+    "food_id": "food_nattoo_001",
+    "display_name": "納豆",
+    "display_unit": "1パック",
+    "representative_weight_g": null,
+    "confidence_level": "medium",
+    "source_note": "MAFF食事バランスガイドは主菜SVを示すが、納豆1パックのg換算値ではない。",
+    "source_type": "public_source_insufficient",
+    "warning_code": "LOW_CONFIDENCE_CONVERSION",
+    "review_status": "use_explicit_grams_preferred",
+    "reviewer_note": "UnitConversion is optional support. Prefer user-entered grams when source is weak."
+  },
+  {
+    "unit_conversion_id": "uc_milk_1_cup",
+    "food_id": "food_milk_001",
+    "display_name": "牛乳",
+    "display_unit": "1杯",
+    "representative_weight_g": null,
+    "confidence_level": "medium_low",
+    "source_note": "MAFF食事バランスガイドは牛乳・乳製品SVを示すが、牛乳1杯のg換算値ではない。",
+    "source_type": "public_source_insufficient",
+    "warning_code": "LOW_CONFIDENCE_CONVERSION",
+    "review_status": "use_explicit_grams_preferred",
+    "reviewer_note": "UnitConversion is optional support. Prefer user-entered grams when source is weak."
+  },
+  {
+    "unit_conversion_id": "uc_rice_1_bowl",
+    "food_id": "food_rice_cooked_white_001",
+    "display_name": "白ごはん",
+    "display_unit": "1杯",
+    "representative_weight_g": null,
+    "confidence_level": "low_medium",
+    "source_note": "MAFF食事バランスガイドは主食SVを示すが、ごはん1杯のg換算値ではない。",
+    "source_type": "public_source_insufficient",
+    "warning_code": "LOW_CONFIDENCE_CONVERSION",
+    "review_status": "use_explicit_grams_preferred",
+    "reviewer_note": "UnitConversion is optional support. Prefer user-entered grams when source is weak."
+  },
+  {
+    "unit_conversion_id": "uc_oil_1_tbsp",
+    "food_id": "food_olive_oil_001",
+    "display_name": "オリーブオイル",
+    "display_unit": "大さじ1",
+    "representative_weight_g": null,
+    "confidence_level": "medium",
+    "source_note": "MAFF食事バランスガイドは油脂・調味料を料理内のものとして扱うが、大さじ1のg換算値ではない。",
+    "source_type": "public_source_insufficient",
+    "warning_code": "LOW_CONFIDENCE_CONVERSION",
+    "review_status": "use_explicit_grams_preferred",
+    "reviewer_note": "UnitConversion is optional support. Prefer user-entered grams when source is weak."
+  },
+  {
+    "unit_conversion_id": "uc_oil_1_tsp",
+    "food_id": "food_olive_oil_001",
+    "display_name": "オリーブオイル",
+    "display_unit": "小さじ1",
+    "representative_weight_g": null,
+    "confidence_level": "medium",
+    "source_note": "MAFF食事バランスガイドは油脂・調味料を料理内のものとして扱うが、小さじ1のg換算値ではない。",
+    "source_type": "public_source_insufficient",
+    "warning_code": "LOW_CONFIDENCE_CONVERSION",
+    "review_status": "use_explicit_grams_preferred",
+    "reviewer_note": "UnitConversion is optional support. Prefer user-entered grams when source is weak."
+  }
+]

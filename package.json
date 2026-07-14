@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "echo \"TODO: add test runner\"",
+    "test": "vitest run",
     "seed:validate": "tsx scripts/validate-seed.ts",
     "check:api-contract": "tsx scripts/check-api-contract.ts",
     "check:logging": "tsx scripts/check-logging-allowlist.ts"
@@ -17,9 +17,10 @@
     "react-dom": "latest"
   },
   "devDependencies": {
-    "typescript": "latest",
-    "tsx": "latest",
     "@types/node": "latest",
-    "@types/react": "latest"
+    "@types/react": "latest",
+    "tsx": "latest",
+    "typescript": "latest",
+    "vitest": "^4.1.10"
   }
 }
