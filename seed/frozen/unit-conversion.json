@@ -1,0 +1,9 @@
+{
+  "standardInputUnit": "g",
+  "allowedHelperUnits": [],
+  "forbiddenAutoConversions": [
+    "piece",
+    "cup",
+    "pack"
+  ]
+}

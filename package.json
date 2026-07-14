@@ -1,0 +1,25 @@
+{
+  "name": "nutrition-app",
+  "private": true,
+  "version": "0.0.0-template",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "echo \"TODO: add test runner\"",
+    "seed:validate": "tsx scripts/validate-seed.ts",
+    "check:api-contract": "tsx scripts/check-api-contract.ts",
+    "check:logging": "tsx scripts/check-logging-allowlist.ts"
+  },
+  "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "tsx": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest"
+  }
+}

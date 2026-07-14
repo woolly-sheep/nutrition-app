@@ -1,0 +1,27 @@
+{
+  "version": "2026-07-07",
+  "status": "template",
+  "note": "Replace counts and checksums after inserting real frozen seed data.",
+  "files": [
+    {
+      "name": "food-master.json",
+      "expectedRows": 40,
+      "checksum": "TODO"
+    },
+    {
+      "name": "nutrient-amount.json",
+      "expectedRows": 640,
+      "checksum": "TODO"
+    },
+    {
+      "name": "nutrient-reference.json",
+      "expectedRows": 330,
+      "checksum": "TODO"
+    },
+    {
+      "name": "unit-conversion.json",
+      "expectedRows": null,
+      "checksum": "TODO"
+    }
+  ]
+}
