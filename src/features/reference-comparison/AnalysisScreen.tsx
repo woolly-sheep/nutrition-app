@@ -12,6 +12,7 @@ import type {
   DailyAnalysisResponse,
 } from "../../server/api/schemas/analysis";
 import { AGE_BAND_LABELS, SEX_LABELS } from "../daily-summary/ProfileSetup";
+import { WeeklyReport } from "./WeeklyReport";
 
 /**
  * 分析タブ・日次 (UI design v0.1 §4.3 + v0.2 addendum §3):
@@ -79,6 +80,7 @@ export function AnalysisScreen() {
         <Link href="/meals" style={styles.link}>
           食事を記録する →
         </Link>
+        <WeeklyReport date={data.date} />
         <SourceFooter sources={data.sources} />
       </div>
     );
@@ -131,6 +133,8 @@ export function AnalysisScreen() {
       <Link href="/meals" style={styles.link}>
         内訳になった食事を確認 →
       </Link>
+
+      <WeeklyReport date={data.date} />
 
       <SourceFooter sources={data.sources} />
     </div>
