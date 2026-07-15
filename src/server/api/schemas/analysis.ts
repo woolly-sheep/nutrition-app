@@ -23,6 +23,15 @@ export type AnalysisNutrientItem = {
   remaining_amount?: number;
 };
 
+/** UL/DG threshold exceedance (UI design v0.2 addendum §1/§3). */
+export type AnalysisExceedanceItem = AnalysisNutrientItem & {
+  threshold_value: number;
+  over_amount: number;
+  percent_of_threshold: number;
+  /** Per-meal contribution (参考情報), largest first. Codes+amounts only. */
+  meal_breakdown: readonly { meal_type: string; amount: number }[];
+};
+
 export type DailyAnalysisResponse = {
   date: string;
   profile: StoredProfile | null;
@@ -35,6 +44,10 @@ export type DailyAnalysisResponse = {
     comparable_count: number;
     at_least_80_count: number;
     within_goal_count: number;
+    /** 7a section — empty on days with no UL exceedance. */
+    ul_reached: readonly AnalysisExceedanceItem[];
+    /** 6b section — empty on days with no DG overage. */
+    dg_over: readonly AnalysisExceedanceItem[];
   } | null;
   /** Calculation warning codes only — never meal contents. */
   warning_codes: readonly string[];
