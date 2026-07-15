@@ -1,0 +1,24 @@
+@import "./tokens.css";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-base);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Mobile-first: content column + bottom tab bar clearance */
+.app-main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px 16px calc(var(--tap-target-min) + 40px);
+}

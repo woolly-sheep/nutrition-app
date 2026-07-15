@@ -20,7 +20,7 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "tsx": "latest",
-    "typescript": "latest",
+    "typescript": "^5.9.3",
     "vitest": "^4.1.10"
   }
 }

@@ -9,3 +9,4 @@ coverage/
 .env.production
 .DS_Store
 *.log
+data/
