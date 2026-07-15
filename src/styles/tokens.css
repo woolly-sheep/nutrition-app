@@ -1,0 +1,23 @@
+/*
+ * Design tokens — docs/design/ui_design_v0_1_20260714.md §2.
+ * 1 color = 1 meaning (5a semantics). Red is intentionally absent:
+ * warning colors carry medical connotations (safe wording policy).
+ */
+
+:root {
+  /* 2.1 Color palette (07 Recommended UI Palette) */
+  --color-base: #fffdfc; /* screen background */
+  --color-surface: #ddf7f5; /* soft cards / info callouts only */
+  --color-primary: #2f8c7e; /* CTA, selection, progress, intake */
+  --color-primary-deep: #206b60; /* hover, >100% overage fill */
+  --color-accent: #f4c23a; /* achievement badges/chips ONLY */
+  --color-text: #202a2c;
+  --color-subtext: #6a7776;
+
+  /* 2.2 Typography */
+  --font-ui: "Noto Sans JP", sans-serif;
+  --font-numeric: "Shippori Mincho B1", serif; /* key figures (あと◯◯) */
+
+  /* 2.4 Interaction */
+  --tap-target-min: 44px;
+}
