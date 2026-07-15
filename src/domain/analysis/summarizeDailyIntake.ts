@@ -16,6 +16,20 @@ export type DailySummaryItem = {
   remainingAmount?: number;
 };
 
+/**
+ * A nutrient whose intake crossed a UL or DG threshold (UI design v0.2
+ * addendum §1/§3). Facts only: how far past which threshold.
+ */
+export type ThresholdExceedance = {
+  judgment: NutrientJudgment;
+  /** The UL value, or the DG bound (less-than max / range max). */
+  thresholdValue: number;
+  /** intake − threshold (always > 0 here). */
+  overAmount: number;
+  /** intake ÷ threshold × 100, for threshold-bar rendering. */
+  percentOfThreshold: number;
+};
+
 export type DailySummary = {
   /** RDA/AI nutrients with an exact numeric reference, percent descending. */
   comparable: readonly DailySummaryItem[];
@@ -27,6 +41,10 @@ export type DailySummary = {
   atLeast80Count: number;
   /** DG nutrients currently within their goal (目標圏内 n項目). */
   withinGoalCount: number;
+  /** UL exceedances (7a section), largest overshoot ratio first. */
+  ulReached: readonly ThresholdExceedance[];
+  /** DG overages (6b section), largest overshoot ratio first. */
+  dgOver: readonly ThresholdExceedance[];
   /** Everything else (UL / DG / reference_only / unknown …) untouched. */
   others: readonly NutrientJudgment[];
 };
@@ -72,8 +90,45 @@ export function summarizeDailyIntake(
     withinGoalCount: others.filter(
       (judgment) => judgment.status === "within_goal",
     ).length,
+    ulReached: collectExceedances(others, "above_upper_limit"),
+    dgOver: collectExceedances(others, "above_goal"),
     others,
   };
+}
+
+function collectExceedances(
+  judgments: readonly NutrientJudgment[],
+  status: "above_upper_limit" | "above_goal",
+): ThresholdExceedance[] {
+  return judgments
+    .filter((judgment) => judgment.status === status)
+    .flatMap((judgment) => {
+      const exceedance = toExceedance(judgment);
+      return exceedance ? [exceedance] : [];
+    })
+    .sort((a, b) => b.percentOfThreshold - a.percentOfThreshold);
+}
+
+function toExceedance(judgment: NutrientJudgment): ThresholdExceedance | null {
+  const threshold = thresholdOf(judgment);
+  if (threshold === null || threshold <= 0) {
+    return null;
+  }
+  return {
+    judgment,
+    thresholdValue: threshold,
+    overAmount: judgment.intakeAmount - threshold,
+    percentOfThreshold: (judgment.intakeAmount / threshold) * 100,
+  };
+}
+
+/** The crossed bound: UL value, DG less-than max, or DG range max. */
+function thresholdOf(judgment: NutrientJudgment): number | null {
+  const parsed = parseOfficialValue(judgment.referenceValue);
+  if (parsed.kind === "exact") return parsed.value;
+  if (parsed.kind === "less_than") return parsed.max;
+  if (parsed.kind === "range") return parsed.max;
+  return null;
 }
 
 function toComparableItem(

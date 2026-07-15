@@ -75,6 +75,60 @@ describe("getDailyAnalysis", () => {
     expect(JSON.stringify(result.warning_codes)).not.toContain("100");
   });
 
+  it("reports UL exceedance with per-meal breakdown for an extreme intake", async () => {
+    const result = await getDailyAnalysis("2026-07-15", {
+      seed,
+      loadProfile: async () => profile,
+      loadMeals: async () => [
+        { ...meal([{ food_id: "food_egg_raw_001", intake_g: 1500 }]), meal_type: "breakfast" },
+        { ...meal([{ food_id: "food_egg_raw_001", intake_g: 1500 }]), meal_type: "dinner" },
+      ],
+    });
+    const ul = result.summary!.ul_reached.find(
+      (item) => item.nutrient_code === "vitamin_a_ug",
+    );
+    expect(ul).toBeDefined();
+    expect(ul!.intake_amount).toBeGreaterThan(ul!.threshold_value);
+    expect(ul!.over_amount).toBeCloseTo(
+      ul!.intake_amount - ul!.threshold_value,
+      5,
+    );
+    expect(ul!.note).toContain("専門家");
+    expect(ul!.meal_breakdown.length).toBe(2);
+    expect(ul!.meal_breakdown[0].amount).toBeGreaterThanOrEqual(
+      ul!.meal_breakdown[1].amount,
+    );
+  });
+
+  it("reports DG salt overage with the DG/UL distinction note", async () => {
+    const result = await getDailyAnalysis("2026-07-15", {
+      seed,
+      loadProfile: async () => profile,
+      loadMeals: async () => [
+        meal([{ food_id: "food_miso_001", intake_g: 100 }]),
+      ],
+    });
+    const salt = result.summary!.dg_over.find(
+      (item) => item.nutrient_code === "salt_equivalent_g",
+    );
+    expect(salt).toBeDefined();
+    expect(salt!.threshold_value).toBe(7.5);
+    expect(salt!.over_amount).toBeCloseTo(12.4 - 7.5, 5);
+    expect(salt!.note).toContain("目標量(DG)");
+  });
+
+  it("returns empty exceedance lists on a normal day", async () => {
+    const result = await getDailyAnalysis("2026-07-15", {
+      seed,
+      loadProfile: async () => profile,
+      loadMeals: async () => [
+        meal([{ food_id: "food_rice_cooked_white_001", intake_g: 150 }]),
+      ],
+    });
+    expect(result.summary!.ul_reached).toHaveLength(0);
+    expect(result.summary!.dg_over).toHaveLength(0);
+  });
+
   it("keeps rice shortfalls consistent with domain math (iron RDA example)", async () => {
     const result = await getDailyAnalysis("2026-07-15", {
       seed,
