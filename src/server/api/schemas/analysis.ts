@@ -55,6 +55,41 @@ export type DailyAnalysisResponse = {
   sources: readonly string[];
 };
 
+/** GET /api/analysis?period=weekly — weekly fulfillment report (5c/6c). */
+export type WeeklyNutrientItem = {
+  nutrient_code: string;
+  nutrient_name: string;
+  unit: string;
+  /** Mean over recorded days only — missing days are never zero-filled. */
+  average_percent: number;
+  days_below_50: number;
+  days_achieved: number;
+  recorded_days: number;
+  daily: readonly { date: string; percent: number | null }[];
+};
+
+export type WeeklyPatternItem = {
+  nutrient_code: string;
+  nutrient_name: string;
+  days_below_50: number;
+  recorded_days: number;
+};
+
+export type WeeklyAnalysisResponse = {
+  date: string;
+  week_start: string;
+  week_end: string;
+  profile: StoredProfile | null;
+  profile_required: boolean;
+  recorded_dates: readonly string[];
+  /** Evaluated days with no records — excluded from averages (6c). */
+  missing_dates: readonly string[];
+  nutrients: readonly WeeklyNutrientItem[];
+  patterns: readonly WeeklyPatternItem[];
+  disclaimer: string;
+  sources: readonly string[];
+};
+
 export const DATA_SOURCES = [
   "日本食品標準成分表(八訂)増補2023年",
   "日本人の食事摂取基準(2025年版)",
