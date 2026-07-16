@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
  */
 
 import * as analysisRoute from "../../src/app/api/analysis/route";
+import * as mealDeleteRoute from "../../src/app/api/meals/[meal_id]/route";
 import * as candidatesRoute from "../../src/app/api/analysis/candidates/route";
 import * as foodsRoute from "../../src/app/api/foods/route";
 import * as mealsRoute from "../../src/app/api/meals/route";
@@ -163,6 +164,42 @@ describe("API flows (e2e through route handlers)", () => {
     expect(candidates.has_analysis).toBe(true);
     expect(candidates.candidates.length).toBeGreaterThan(0);
     expect(candidates.notice).toContain("摂取の推奨ではありません");
+  });
+
+  it("lists a day's meals enriched with names and kcal, then deletes one", async () => {
+    const enriched = await (
+      await mealsRoute.GET(get("/api/meals?date=2026-07-16"))
+    ).json();
+    expect(enriched.meals).toHaveLength(2);
+    for (const meal of enriched.meals) {
+      expect(meal.items[0].display_name).toBeTruthy();
+      expect(meal.estimated_kcal).toBeGreaterThan(0);
+    }
+
+    const target = enriched.meals[0].meal_id as string;
+    const missing = await mealDeleteRoute.DELETE(
+      new Request("http://localhost:3000/api/meals/meal_nonexistent", {
+        method: "DELETE",
+      }),
+      { params: Promise.resolve({ meal_id: "meal_nonexistent" }) },
+    );
+    expect(missing.status).toBe(404);
+
+    const deleted = await mealDeleteRoute.DELETE(
+      new Request(`http://localhost:3000/api/meals/${target}`, {
+        method: "DELETE",
+      }),
+      { params: Promise.resolve({ meal_id: target }) },
+    );
+    expect(deleted.status).toBe(200);
+
+    const after = await (
+      await mealsRoute.GET(get("/api/meals?date=2026-07-16"))
+    ).json();
+    expect(after.meals).toHaveLength(1);
+    expect(
+      after.meals.map((meal: { meal_id: string }) => meal.meal_id),
+    ).not.toContain(target);
   });
 
   it("rejects malformed dates across analysis endpoints", async () => {
