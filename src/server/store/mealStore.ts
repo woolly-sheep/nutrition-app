@@ -12,8 +12,14 @@ import type {
  * outside src and is gitignored; never log its contents.
  */
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const MEALS_FILE = path.join(DATA_DIR, "meals.json");
+/** Resolved per call so tests can point NUTRITION_DATA_DIR at a temp dir. */
+function dataDir(): string {
+  return process.env.NUTRITION_DATA_DIR ?? path.join(process.cwd(), "data");
+}
+
+function mealsFile(): string {
+  return path.join(dataDir(), "meals.json");
+}
 
 export async function listMeals(date?: string): Promise<MealRecord[]> {
   const meals = await readAll();
@@ -36,7 +42,7 @@ export async function appendMeal(input: CreateMealRequest): Promise<MealRecord> 
 
 async function readAll(): Promise<MealRecord[]> {
   try {
-    const raw = await readFile(MEALS_FILE, "utf-8");
+    const raw = await readFile(mealsFile(), "utf-8");
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed) ? (parsed as MealRecord[]) : [];
   } catch {
@@ -45,6 +51,6 @@ async function readAll(): Promise<MealRecord[]> {
 }
 
 async function writeAll(meals: readonly MealRecord[]): Promise<void> {
-  await mkdir(DATA_DIR, { recursive: true });
-  await writeFile(MEALS_FILE, JSON.stringify(meals, null, 2), "utf-8");
+  await mkdir(dataDir(), { recursive: true });
+  await writeFile(mealsFile(), JSON.stringify(meals, null, 2), "utf-8");
 }

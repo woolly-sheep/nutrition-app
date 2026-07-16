@@ -12,12 +12,18 @@ export type StoredProfile = {
   ageBand: AgeBand;
 };
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const PROFILE_FILE = path.join(DATA_DIR, "profile.json");
+/** Resolved per call so tests can point NUTRITION_DATA_DIR at a temp dir. */
+function dataDir(): string {
+  return process.env.NUTRITION_DATA_DIR ?? path.join(process.cwd(), "data");
+}
+
+function profileFile(): string {
+  return path.join(dataDir(), "profile.json");
+}
 
 export async function readProfile(): Promise<StoredProfile | null> {
   try {
-    const raw = await readFile(PROFILE_FILE, "utf-8");
+    const raw = await readFile(profileFile(), "utf-8");
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) {
       return null;
@@ -33,9 +39,9 @@ export async function readProfile(): Promise<StoredProfile | null> {
 }
 
 export async function writeProfile(profile: StoredProfile): Promise<void> {
-  await mkdir(DATA_DIR, { recursive: true });
+  await mkdir(dataDir(), { recursive: true });
   await writeFile(
-    PROFILE_FILE,
+    profileFile(),
     JSON.stringify({ sex: profile.sex, ageBand: profile.ageBand }, null, 2),
     "utf-8",
   );
