@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import type {
+  FoodCandidatesResponse,
+} from "../../server/api/handlers/getFoodCandidates";
+import type {
+  UsualFoodsResponse,
+} from "../../server/api/handlers/getUsualFoods";
 import type { MealType } from "../../server/api/schemas/meals";
 import { FoodSearchBox, type DraftItem } from "../food-search/FoodSearchBox";
 
 /**
- * 記録 tab (UI design v0.1 §4.2). P0 scope: search + grams input +
- * add preview + save. いつもの食事 / 不足を補う候補 are P2.
+ * 記録 tab (UI design v0.1 §4.2 + v0.3 addendum). Search + grams input +
+ * add preview + save, plus two P2 shortcuts: いつもの食事 (derived from
+ * recent records, no persisted favorites) and 不足を補う候補 (tied to
+ * today's analysis, facts only, mandatory non-recommendation notice).
  * Draft items use the 5a "add preview" coding (dashed border) until saved.
  */
 
@@ -23,8 +31,35 @@ export function MealEntryScreen() {
   const [saveState, setSaveState] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
+  const [usual, setUsual] = useState<UsualFoodsResponse | null>(null);
+  const [candidates, setCandidates] = useState<FoodCandidatesResponse | null>(
+    null,
+  );
 
   const today = todayIsoDate();
+
+  const loadShortcuts = useCallback(async () => {
+    try {
+      const [usualResponse, candidatesResponse] = await Promise.all([
+        fetch(`/api/meals/usual?meal_type=${mealType}&date=${today}`),
+        fetch(`/api/analysis/candidates?date=${today}`),
+      ]);
+      if (usualResponse.ok) {
+        setUsual((await usualResponse.json()) as UsualFoodsResponse);
+      }
+      if (candidatesResponse.ok) {
+        setCandidates(
+          (await candidatesResponse.json()) as FoodCandidatesResponse,
+        );
+      }
+    } catch {
+      // shortcuts are supplementary — search and save still work
+    }
+  }, [mealType, today]);
+
+  useEffect(() => {
+    void loadShortcuts();
+  }, [loadShortcuts]);
   const totalKcal = draftItems.reduce(
     (sum, item) => sum + (item.estimatedKcal ?? 0),
     0,
@@ -63,6 +98,7 @@ export function MealEntryScreen() {
       }
       setDraftItems([]);
       setSaveState("saved");
+      void loadShortcuts();
     } catch {
       setSaveState("error");
     }
@@ -99,6 +135,93 @@ export function MealEntryScreen() {
       </header>
 
       <FoodSearchBox onAdd={handleAdd} />
+
+      {usual !== null && usual.items.length > 0 && (
+        <section style={{ marginTop: "24px" }}>
+          <h2 style={styles.sectionTitle}>
+            いつもの{MEAL_TYPE_LABELS[mealType]}
+            <span style={styles.sectionHint}>（最近の記録から）</span>
+          </h2>
+          <ul style={styles.shortcutList}>
+            {usual.items.map((item) => (
+              <li key={item.food_id} style={styles.shortcutRow}>
+                <span style={{ flex: 1 }}>
+                  {item.display_name} {item.intake_g}g
+                  {item.estimated_kcal !== null && (
+                    <span style={styles.subtext}>
+                      {" "}
+                      {Math.round(item.estimated_kcal)} kcal
+                    </span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleAdd({
+                      foodId: item.food_id,
+                      displayName: item.display_name,
+                      intakeG: item.intake_g,
+                      estimatedKcal: item.estimated_kcal,
+                    })
+                  }
+                  aria-label={`${item.display_name}を追加`}
+                  style={styles.shortcutAdd}
+                >
+                  ＋
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {candidates !== null &&
+        candidates.has_analysis &&
+        candidates.candidates.length > 0 && (
+          <section style={{ marginTop: "24px" }}>
+            <h2 style={styles.sectionTitle}>不足を補う候補</h2>
+            <ul style={styles.shortcutList}>
+              {candidates.candidates.map((candidate) => (
+                <li
+                  key={`${candidate.target_nutrient_code}-${candidate.food_id}`}
+                  style={styles.shortcutRow}
+                >
+                  <span style={{ flex: 1 }}>
+                    {candidate.display_name}{" "}
+                    {candidate.portion_label ?? `${candidate.portion_g}g`}
+                    {candidate.estimated_kcal !== null && (
+                      <span style={styles.subtext}>
+                        {" "}
+                        {Math.round(candidate.estimated_kcal)} kcal
+                      </span>
+                    )}
+                    <span style={styles.subtext}>
+                      {" · "}
+                      {candidate.target_nutrient_name}不足分の約
+                      {Math.round(candidate.percent_of_shortfall)}%
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleAdd({
+                        foodId: candidate.food_id,
+                        displayName: candidate.display_name,
+                        intakeG: candidate.portion_g,
+                        estimatedKcal: candidate.estimated_kcal,
+                      })
+                    }
+                    aria-label={`${candidate.display_name}を追加`}
+                    style={styles.shortcutAdd}
+                  >
+                    ＋追加
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p style={styles.subtext}>{candidates.notice}</p>
+          </section>
+        )}
 
       <section style={{ marginTop: "24px" }}>
         <h2 style={styles.sectionTitle}>この食事に追加済み</h2>
@@ -198,6 +321,33 @@ const styles = {
     cursor: "pointer",
   },
   sectionTitle: { fontSize: "15px", margin: "0 0 8px" },
+  sectionHint: {
+    fontSize: "12px",
+    fontWeight: 400,
+    color: "var(--color-subtext)",
+  },
+  shortcutList: { listStyle: "none", margin: 0, padding: 0 },
+  shortcutRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    minHeight: "var(--tap-target-min)",
+    padding: "4px 0",
+    borderBottom: "1px solid var(--color-surface)",
+    fontSize: "14px",
+  },
+  shortcutAdd: {
+    minHeight: "var(--tap-target-min)",
+    minWidth: "var(--tap-target-min)",
+    padding: "0 12px",
+    border: "1px solid var(--color-primary)",
+    borderRadius: "8px",
+    background: "var(--color-base)",
+    color: "var(--color-primary)",
+    fontSize: "14px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
   draftList: { listStyle: "none", margin: 0, padding: 0 },
   draftRow: {
     display: "flex",
