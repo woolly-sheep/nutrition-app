@@ -21,6 +21,7 @@
     "@types/react": "latest",
     "tsx": "latest",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "yaml": "^2.9.0"
   }
 }
