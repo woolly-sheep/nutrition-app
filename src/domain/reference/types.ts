@@ -50,4 +50,10 @@ export type NutrientJudgment = {
   referenceValue: OfficialValue;
   unit: string;
   intakeAmount: number;
+  /**
+   * For %E-range DGs (protein/fat/carb) only: the estimated share of
+   * energy intake (decision-20260717-energy-ratio-dg). The DG range is
+   * compared against this value, not against grams.
+   */
+  energyRatioPercent?: number;
 };

@@ -392,10 +392,16 @@ components:
         - $ref: "#/components/schemas/AnalysisNutrientItem"
         - type: object
           required: [threshold_value, over_amount, percent_of_threshold, meal_breakdown]
+          description: |
+            %Eレンジ DG（protein/fat/carb）の場合は unit="%E"、
+            intake_amount=推定エネルギー比、threshold_value=範囲上限、
+            range_min=範囲下限、over_amount の単位は pt。
+            meal_breakdown は %E 項目では空（分母が食事ごとに異なるため）。
           properties:
             threshold_value: { type: number }
             over_amount: { type: number }
             percent_of_threshold: { type: number }
+            range_min: { type: number }
             meal_breakdown:
               type: array
               items:

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BulletBar } from "../../components/BulletBar";
+import { RangeBar } from "../../components/RangeBar";
 import { formatAmount } from "../../components/RemainingCard";
 import { SourceFooter } from "../../components/SourceFooter";
 import { ThresholdBar } from "../../components/ThresholdBar";
@@ -173,6 +174,7 @@ function ExceedanceRow({
   item: AnalysisExceedanceItem;
   kind: "ul" | "dg";
 }) {
+  const isEnergyRatio = item.unit === "%E";
   const thresholdLabel =
     kind === "ul"
       ? `UL ${formatAmount(item.threshold_value)}`
@@ -193,13 +195,23 @@ function ExceedanceRow({
           fontWeight: 700,
         }}
       >
-        {kind === "ul" ? "上限" : "目標"}より +{formatAmount(item.over_amount)}
-        {item.unit}
+        {kind === "ul" ? "上限" : isEnergyRatio ? "目標範囲" : "目標"}より +
+        {formatAmount(item.over_amount)}
+        {isEnergyRatio ? "pt" : item.unit}
       </p>
-      <ThresholdBar
-        percentOfThreshold={item.percent_of_threshold}
-        label={`${item.nutrient_name} ${kind === "ul" ? "UL" : "目標"}比 ${Math.round(item.percent_of_threshold)}%`}
-      />
+      {isEnergyRatio && item.range_min !== undefined ? (
+        <RangeBar
+          value={item.intake_amount}
+          rangeMin={item.range_min}
+          rangeMax={item.threshold_value}
+          label={`${item.nutrient_name} ${Math.round(item.intake_amount)}%E（目標 ${item.range_min}〜${item.threshold_value}%E）`}
+        />
+      ) : (
+        <ThresholdBar
+          percentOfThreshold={item.percent_of_threshold}
+          label={`${item.nutrient_name} ${kind === "ul" ? "UL" : "目標"}比 ${Math.round(item.percent_of_threshold)}%`}
+        />
+      )}
       {item.meal_breakdown.length > 0 && (
         <p style={{ margin: "6px 0 0", fontSize: "12px", color: "var(--color-subtext)" }}>
           内訳の上位:{" "}

@@ -5,6 +5,7 @@ import type {
 } from "../../../domain/analysis/summarizeDailyIntake";
 import { calculateNutrientIntake } from "../../../domain/nutrient/calculateNutrientIntake";
 import { judgeAgainstReference } from "../../../domain/reference/judgeAgainstReference";
+import { parseOfficialValue } from "../../../domain/reference/officialValue";
 import { DISCLAIMER, wordingForJudgment } from "../../../domain/wording/safeWording";
 import { loadSeed } from "../../../seed/loadSeed";
 import type { Seed } from "../../../seed/types";
@@ -110,24 +111,32 @@ function toExceedanceItem(
   seed: Seed,
 ): AnalysisExceedanceItem {
   const wording = wordingForJudgment(exceedance.judgment);
+  const energyRatio = exceedance.judgment.energyRatioPercent;
+  const parsedRange =
+    energyRatio !== undefined
+      ? parseOfficialValue(exceedance.judgment.referenceValue)
+      : null;
   return {
     nutrient_code: exceedance.judgment.nutrientCode,
     nutrient_name: exceedance.judgment.nutrientName,
-    unit: exceedance.judgment.unit,
+    // %E DGs are judged on the energy share (decision-20260717):
+    // report that share with its own unit, never the raw grams.
+    unit: energyRatio !== undefined ? "%E" : exceedance.judgment.unit,
     reference_type: exceedance.judgment.referenceType,
     status: exceedance.judgment.status,
     label: wording.label,
     ...(wording.note ? { note: wording.note } : {}),
-    intake_amount: exceedance.judgment.intakeAmount,
+    intake_amount: energyRatio ?? exceedance.judgment.intakeAmount,
     reference_value: exceedance.judgment.referenceValue,
     threshold_value: exceedance.thresholdValue,
     over_amount: exceedance.overAmount,
     percent_of_threshold: exceedance.percentOfThreshold,
-    meal_breakdown: mealBreakdown(
-      exceedance.judgment.nutrientCode,
-      meals,
-      seed,
-    ),
+    // per-meal %E is not meaningful (mixed units) — omit for %E items
+    meal_breakdown:
+      energyRatio !== undefined
+        ? []
+        : mealBreakdown(exceedance.judgment.nutrientCode, meals, seed),
+    ...(parsedRange?.kind === "range" ? { range_min: parsedRange.min } : {}),
   };
 }
 

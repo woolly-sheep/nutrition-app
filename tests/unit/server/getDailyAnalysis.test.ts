@@ -117,7 +117,29 @@ describe("getDailyAnalysis", () => {
     expect(salt!.note).toContain("目標量(DG)");
   });
 
-  it("returns empty exceedance lists on a normal day", async () => {
+  it("reports %E-range DG overage in %E units with the range and no breakdown", async () => {
+    // ごま 100g: fat 54.2g × 9 ÷ 605 kcal = 80.6%E → above the 20–30 range
+    const result = await getDailyAnalysis("2026-07-17", {
+      seed,
+      loadProfile: async () => profile,
+      loadMeals: async () => [
+        meal([{ food_id: "food_sesame_001", intake_g: 100 }]),
+      ],
+    });
+    const fat = result.summary!.dg_over.find(
+      (item) => item.nutrient_code === "fat_g",
+    );
+    expect(fat).toBeDefined();
+    expect(fat!.unit).toBe("%E");
+    expect(fat!.intake_amount).toBeCloseTo((54.2 * 9 * 100) / 605, 1);
+    expect(fat!.range_min).toBe(20);
+    expect(fat!.threshold_value).toBe(30);
+    expect(fat!.over_amount).toBeCloseTo(fat!.intake_amount - 30, 5);
+    expect(fat!.meal_breakdown).toHaveLength(0);
+    expect(fat!.reference_value).toBe("20-30");
+  });
+
+  it("keeps UL empty on a normal day; rice-only day correctly flags carb %E", async () => {
     const result = await getDailyAnalysis("2026-07-15", {
       seed,
       loadProfile: async () => profile,
@@ -126,7 +148,14 @@ describe("getDailyAnalysis", () => {
       ],
     });
     expect(result.summary!.ul_reached).toHaveLength(0);
-    expect(result.summary!.dg_over).toHaveLength(0);
+    // rice only → carbohydrate energy share above the 50–65%E goal range,
+    // which is a true fact (decision-20260717); no gram-based DG overage
+    expect(
+      result.summary!.dg_over.every((item) => item.unit === "%E"),
+    ).toBe(true);
+    expect(
+      result.summary!.dg_over.map((item) => item.nutrient_code),
+    ).toContain("carbohydrate_g");
   });
 
   it("keeps rice shortfalls consistent with domain math (iron RDA example)", async () => {
