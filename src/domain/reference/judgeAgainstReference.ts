@@ -10,13 +10,16 @@ import type {
 /**
  * DG values for these nutrients are energy-ratio ranges (%E) in the DRI
  * 2025 report, even though the frozen seed stores them with unit "g"
- * (preserved as-is on purpose). Comparing gram intake against them would
- * state a false fact, so MVP returns unknown instead of judging.
+ * (preserved as-is on purpose). Intake is converted to %E with the
+ * Atwater general factors before comparing — an intake-side estimate,
+ * never a recalculation of official seed values
+ * (decision-20260717-energy-ratio-dg). Days without a computable energy
+ * intake stay unknown.
  */
-const ENERGY_RATIO_DG_NUTRIENTS: ReadonlySet<string> = new Set([
-  "protein_g",
-  "fat_g",
-  "carbohydrate_g",
+const ENERGY_CONVERSION_KCAL_PER_G: ReadonlyMap<string, number> = new Map([
+  ["protein_g", 4],
+  ["fat_g", 9],
+  ["carbohydrate_g", 4],
 ]);
 
 /**
@@ -50,7 +53,11 @@ function judgeRecord(
   intakeByNutrientCode: ReadonlyMap<string, number>,
 ): NutrientJudgment {
   const intakeAmount = intakeByNutrientCode.get(record.nutrient_code) ?? 0;
-  const { status, unknownReason } = judgeStatus(record, intakeAmount);
+  const { status, unknownReason, energyRatioPercent } = judgeStatus(
+    record,
+    intakeAmount,
+    intakeByNutrientCode,
+  );
   return {
     nutrientCode: record.nutrient_code,
     nutrientName: record.nutrient_name,
@@ -61,17 +68,20 @@ function judgeRecord(
     referenceValue: record.value,
     unit: record.unit,
     intakeAmount,
+    ...(energyRatioPercent !== undefined ? { energyRatioPercent } : {}),
   };
 }
 
 type StatusResult = {
   status: JudgmentStatus;
   unknownReason?: JudgmentUnknownReason;
+  energyRatioPercent?: number;
 };
 
 function judgeStatus(
   record: NutrientReferenceRecord,
   intakeAmount: number,
+  intakeByNutrientCode: ReadonlyMap<string, number>,
 ): StatusResult {
   switch (record.reference_type) {
     case "recommended_dietary_allowance":
@@ -80,7 +90,7 @@ function judgeStatus(
     case "tolerable_upper_intake_level":
       return judgeUpperLimit(record, intakeAmount);
     case "tentative_dietary_goal":
-      return judgeDietaryGoal(record, intakeAmount);
+      return judgeDietaryGoal(record, intakeAmount, intakeByNutrientCode);
     case "estimated_average_requirement":
     case "estimated_energy_requirement":
       return { status: "reference_only" };
@@ -120,9 +130,13 @@ function judgeUpperLimit(
 function judgeDietaryGoal(
   record: NutrientReferenceRecord,
   intakeAmount: number,
+  intakeByNutrientCode: ReadonlyMap<string, number>,
 ): StatusResult {
-  if (ENERGY_RATIO_DG_NUTRIENTS.has(record.nutrient_code)) {
-    return { status: "unknown", unknownReason: "energy_ratio_range" };
+  const conversionFactor = ENERGY_CONVERSION_KCAL_PER_G.get(
+    record.nutrient_code,
+  );
+  if (conversionFactor !== undefined) {
+    return judgeEnergyRatioGoal(record, intakeAmount, conversionFactor, intakeByNutrientCode);
   }
 
   const parsed = parseOfficialValue(record.value);
@@ -140,6 +154,30 @@ function judgeDietaryGoal(
     return { status: intakeAmount < parsed.max ? "within_goal" : "above_goal" };
   }
   return nonComparable(parsed);
+}
+
+/** %E-range DG: compare the estimated energy share against the range. */
+function judgeEnergyRatioGoal(
+  record: NutrientReferenceRecord,
+  intakeAmount: number,
+  conversionFactor: number,
+  intakeByNutrientCode: ReadonlyMap<string, number>,
+): StatusResult {
+  const energyIntake = intakeByNutrientCode.get("energy_kcal") ?? 0;
+  const parsed = parseOfficialValue(record.value);
+  if (energyIntake <= 0 || parsed.kind !== "range") {
+    return { status: "unknown", unknownReason: "energy_ratio_range" };
+  }
+
+  const energyRatioPercent =
+    ((intakeAmount * conversionFactor) / energyIntake) * 100;
+  const status: JudgmentStatus =
+    energyRatioPercent < parsed.min
+      ? "below_goal"
+      : energyRatioPercent > parsed.max
+        ? "above_goal"
+        : "within_goal";
+  return { status, energyRatioPercent };
 }
 
 function nonComparable(parsed: ParsedOfficialValue): StatusResult {

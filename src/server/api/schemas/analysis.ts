@@ -30,6 +30,11 @@ export type AnalysisExceedanceItem = AnalysisNutrientItem & {
   percent_of_threshold: number;
   /** Per-meal contribution (参考情報), largest first. Codes+amounts only. */
   meal_breakdown: readonly { meal_type: string; amount: number }[];
+  /**
+   * %E-range DGs only (unit === "%E"): the goal range lower bound.
+   * threshold_value is the upper bound; intake_amount is the %E share.
+   */
+  range_min?: number;
 };
 
 export type DailyAnalysisResponse = {

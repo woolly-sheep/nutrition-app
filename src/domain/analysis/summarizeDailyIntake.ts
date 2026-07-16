@@ -114,11 +114,13 @@ function toExceedance(judgment: NutrientJudgment): ThresholdExceedance | null {
   if (threshold === null || threshold <= 0) {
     return null;
   }
+  // %E-range DGs are judged on the energy share, not on grams.
+  const comparedValue = judgment.energyRatioPercent ?? judgment.intakeAmount;
   return {
     judgment,
     thresholdValue: threshold,
-    overAmount: judgment.intakeAmount - threshold,
-    percentOfThreshold: (judgment.intakeAmount / threshold) * 100,
+    overAmount: comparedValue - threshold,
+    percentOfThreshold: (comparedValue / threshold) * 100,
   };
 }
 

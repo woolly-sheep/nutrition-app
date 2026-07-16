@@ -115,7 +115,7 @@ describe("judgeAgainstReference", () => {
     expect(judgeOne(salt, 7.5).status).toBe("above_goal");
   });
 
-  it("returns unknown for energy-ratio DG ranges instead of comparing grams", () => {
+  it("judges energy-ratio DG ranges on the %E share, never on grams (decision-20260717)", () => {
     const fatDg = referenceRecord({
       nutrient_code: "fat_g",
       reference_type: "tentative_dietary_goal",
@@ -123,10 +123,42 @@ describe("judgeAgainstReference", () => {
       value: "20-30",
       unit: "g",
     });
-    const judgment = judgeOne(fatDg, 60);
+
+    const judgeWithEnergy = (fatG: number, energyKcal: number) =>
+      judgeAgainstReference(
+        new Map([
+          ["fat_g", fatG],
+          ["energy_kcal", energyKcal],
+        ]),
+        PROFILE,
+        [fatDg],
+      )[0];
+
+    // 73g fat × 9 kcal/g ÷ 2000 kcal = 32.85%E → above the 20–30 range
+    const over = judgeWithEnergy(73, 2000);
+    expect(over.status).toBe("above_goal");
+    expect(over.energyRatioPercent).toBeCloseTo(32.85, 2);
+    expect(over.referenceValue).toBe("20-30");
+    expect(over.intakeAmount).toBe(73);
+
+    // 55g × 9 ÷ 2000 = 24.75%E → within
+    expect(judgeWithEnergy(55, 2000).status).toBe("within_goal");
+    // 40g × 9 ÷ 2000 = 18%E → below
+    expect(judgeWithEnergy(40, 2000).status).toBe("below_goal");
+  });
+
+  it("keeps energy-ratio DGs unknown when energy intake is not computable", () => {
+    const fatDg = referenceRecord({
+      nutrient_code: "fat_g",
+      reference_type: "tentative_dietary_goal",
+      judgment_policy: "goal_achievement",
+      value: "20-30",
+      unit: "g",
+    });
+    const judgment = judgeOne(fatDg, 60); // no energy_kcal in the intake map
     expect(judgment.status).toBe("unknown");
     expect(judgment.unknownReason).toBe("energy_ratio_range");
-    expect(judgment.referenceValue).toBe("20-30");
+    expect(judgment.energyRatioPercent).toBeUndefined();
   });
 
   it("returns unknown for menstruation-conditional RDA values", () => {
