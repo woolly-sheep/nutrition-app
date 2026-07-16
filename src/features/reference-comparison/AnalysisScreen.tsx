@@ -77,7 +77,7 @@ export function AnalysisScreen() {
           {formatJapaneseDate(data.date)}の記録がまだありません。
           1食記録すると基準値との比較が表示されます。
         </p>
-        <Link href="/meals" style={styles.link}>
+        <Link href={`/meals?date=${data.date}`} style={styles.link}>
           食事を記録する →
         </Link>
         <WeeklyReport date={data.date} />
@@ -130,7 +130,7 @@ export function AnalysisScreen() {
         </section>
       )}
 
-      <Link href="/meals" style={styles.link}>
+      <Link href={`/meals?date=${data.date}`} style={styles.link}>
         内訳になった食事を確認 →
       </Link>
 

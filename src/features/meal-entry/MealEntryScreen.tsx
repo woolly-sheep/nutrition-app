@@ -7,6 +7,7 @@ import type {
 import type {
   UsualFoodsResponse,
 } from "../../server/api/handlers/getUsualFoods";
+import type { DayMeal } from "../../server/api/handlers/listDayMeals";
 import type { MealType } from "../../server/api/schemas/meals";
 import { FoodSearchBox, type DraftItem } from "../food-search/FoodSearchBox";
 
@@ -35,15 +36,28 @@ export function MealEntryScreen() {
   const [candidates, setCandidates] = useState<FoodCandidatesResponse | null>(
     null,
   );
+  const [date, setDate] = useState<string>(todayIsoDate());
+  const [savedMeals, setSavedMeals] = useState<readonly DayMeal[]>([]);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
   const today = todayIsoDate();
 
+  // v0.5 §1: 分析タブ等から /meals?date= で該当日を開ける
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("date");
+    if (requested && /^\d{4}-\d{2}-\d{2}$/.test(requested) && requested <= todayIsoDate()) {
+      setDate(requested);
+    }
+  }, []);
+
   const loadShortcuts = useCallback(async () => {
     try {
-      const [usualResponse, candidatesResponse] = await Promise.all([
-        fetch(`/api/meals/usual?meal_type=${mealType}&date=${today}`),
-        fetch(`/api/analysis/candidates?date=${today}`),
-      ]);
+      const [usualResponse, candidatesResponse, mealsResponse] =
+        await Promise.all([
+          fetch(`/api/meals/usual?meal_type=${mealType}&date=${date}`),
+          fetch(`/api/analysis/candidates?date=${date}`),
+          fetch(`/api/meals?date=${date}`),
+        ]);
       if (usualResponse.ok) {
         setUsual((await usualResponse.json()) as UsualFoodsResponse);
       }
@@ -52,14 +66,42 @@ export function MealEntryScreen() {
           (await candidatesResponse.json()) as FoodCandidatesResponse,
         );
       }
+      if (mealsResponse.ok) {
+        const data = (await mealsResponse.json()) as { meals: DayMeal[] };
+        setSavedMeals(data.meals);
+      }
     } catch {
       // shortcuts are supplementary — search and save still work
     }
-  }, [mealType, today]);
+  }, [mealType, date]);
 
   useEffect(() => {
     void loadShortcuts();
   }, [loadShortcuts]);
+
+  const shiftDate = (days: number) => {
+    const next = isoDatePlusDays(date, days);
+    if (next > today) {
+      return;
+    }
+    setDate(next);
+    setConfirmingDelete(null);
+    setSaveState("idle");
+  };
+
+  const handleDelete = async (mealId: string) => {
+    try {
+      const response = await fetch(`/api/meals/${mealId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setConfirmingDelete(null);
+        void loadShortcuts();
+      }
+    } catch {
+      // list stays as-is; the user can retry
+    }
+  };
   const totalKcal = draftItems.reduce(
     (sum, item) => sum + (item.estimatedKcal ?? 0),
     0,
@@ -84,7 +126,7 @@ export function MealEntryScreen() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          date: today,
+          date,
           meal_type: mealType,
           items: draftItems.map((item) => ({
             food_id: item.foodId,
@@ -107,7 +149,32 @@ export function MealEntryScreen() {
   return (
     <div>
       <header style={styles.header}>
-        <p style={styles.date}>{formatJapaneseDate(today)}</p>
+        <div style={styles.dateNav}>
+          <button
+            type="button"
+            onClick={() => shiftDate(-1)}
+            aria-label="前の日へ"
+            style={styles.dateNavButton}
+          >
+            ←
+          </button>
+          <p style={styles.date}>
+            {formatJapaneseDate(date)}
+            {date !== today && "（過去の記録）"}
+          </p>
+          <button
+            type="button"
+            onClick={() => shiftDate(1)}
+            disabled={date === today}
+            aria-label="次の日へ"
+            style={{
+              ...styles.dateNavButton,
+              opacity: date === today ? 0.3 : 1,
+            }}
+          >
+            →
+          </button>
+        </div>
         <h1 style={styles.title}>{MEAL_TYPE_LABELS[mealType]}を記録</h1>
         <div role="group" aria-label="食事区分" style={styles.mealTypeRow}>
           {(Object.keys(MEAL_TYPE_LABELS) as MealType[]).map((type) => (
@@ -267,6 +334,65 @@ export function MealEntryScreen() {
         {Math.round(totalKcal)} kcal）
       </button>
 
+      <section style={{ marginTop: "28px" }}>
+        <h2 style={styles.sectionTitle}>この日の記録</h2>
+        {savedMeals.length === 0 ? (
+          <p style={styles.subtext}>この日の記録はまだありません。</p>
+        ) : (
+          <ul style={styles.shortcutList}>
+            {savedMeals.map((meal) => (
+              <li key={meal.meal_id} style={styles.savedCard}>
+                <div style={styles.savedHead}>
+                  <span style={{ fontWeight: 700, fontSize: "13px" }}>
+                    {MEAL_TYPE_LABELS[meal.meal_type]}
+                  </span>
+                  {meal.estimated_kcal !== null && (
+                    <span style={styles.subtext}>
+                      約 {Math.round(meal.estimated_kcal)} kcal
+                    </span>
+                  )}
+                </div>
+                <p style={{ margin: "4px 0 8px", fontSize: "14px" }}>
+                  {meal.items
+                    .map((item) => `${item.display_name} ${item.intake_g}g`)
+                    .join(" · ")}
+                </p>
+                {confirmingDelete === meal.meal_id ? (
+                  <div style={styles.confirmRow}>
+                    <span style={{ fontSize: "13px" }}>
+                      この記録を削除する？（取り消せません）
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(meal.meal_id)}
+                      style={styles.confirmDelete}
+                    >
+                      削除する
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDelete(null)}
+                      style={styles.cancelDelete}
+                    >
+                      やめる
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDelete(meal.meal_id)}
+                    aria-label={`${MEAL_TYPE_LABELS[meal.meal_type]}の記録を削除`}
+                    style={styles.deleteButton}
+                  >
+                    削除
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       {saveState === "saved" && (
         <p role="status" style={styles.savedNote}>
           保存しました。ホームで今日のサマリーを確認できます。
@@ -307,9 +433,76 @@ function defaultMealType(): MealType {
   return "snack";
 }
 
+function isoDatePlusDays(date: string, days: number): string {
+  const base = new Date(`${date}T00:00:00Z`);
+  base.setUTCDate(base.getUTCDate() + days);
+  return base.toISOString().slice(0, 10);
+}
+
 const styles = {
   header: { marginBottom: "16px" },
   date: { margin: 0, color: "var(--color-subtext)", fontSize: "13px" },
+  dateNav: { display: "flex", alignItems: "center", gap: "8px" },
+  dateNavButton: {
+    minHeight: "var(--tap-target-min)",
+    minWidth: "var(--tap-target-min)",
+    border: "1px solid var(--color-surface)",
+    borderRadius: "8px",
+    background: "var(--color-base)",
+    color: "var(--color-primary)",
+    fontSize: "16px",
+    cursor: "pointer",
+  },
+  savedCard: {
+    padding: "10px 12px",
+    marginBottom: "8px",
+    // saved = confirmed facts: solid border (5a; dashed is preview-only)
+    border: "1px solid var(--color-surface)",
+    borderRadius: "10px",
+  },
+  savedHead: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    gap: "8px",
+  },
+  confirmRow: {
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: "8px",
+  },
+  confirmDelete: {
+    minHeight: "var(--tap-target-min)",
+    padding: "0 12px",
+    border: "1px solid var(--color-text)",
+    borderRadius: "8px",
+    background: "var(--color-base)",
+    color: "var(--color-text)",
+    fontSize: "13px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  cancelDelete: {
+    minHeight: "var(--tap-target-min)",
+    padding: "0 12px",
+    border: "none",
+    borderRadius: "8px",
+    background: "transparent",
+    color: "var(--color-subtext)",
+    fontSize: "13px",
+    cursor: "pointer",
+  },
+  deleteButton: {
+    minHeight: "var(--tap-target-min)",
+    padding: "0 12px",
+    border: "none",
+    borderRadius: "8px",
+    background: "transparent",
+    color: "var(--color-subtext)",
+    fontSize: "13px",
+    cursor: "pointer",
+  },
   title: { margin: "4px 0 12px", fontSize: "20px" },
   mealTypeRow: { display: "flex", gap: "8px" },
   mealTypeButton: {

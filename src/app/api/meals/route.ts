@@ -3,12 +3,15 @@
 
 import { NextResponse } from "next/server";
 import { createMeal } from "../../../server/api/handlers/createMeal";
+import { listDayMeals } from "../../../server/api/handlers/listDayMeals";
 import { listMeals } from "../../../server/store/mealStore";
 
 export async function GET(request: Request) {
-  const date = new URL(request.url).searchParams.get("date") ?? undefined;
-  const meals = await listMeals(date);
-  return NextResponse.json({ meals });
+  const date = new URL(request.url).searchParams.get("date");
+  if (date) {
+    return NextResponse.json({ meals: await listDayMeals(date) });
+  }
+  return NextResponse.json({ meals: await listMeals() });
 }
 
 export async function POST(request: Request) {

@@ -65,7 +65,7 @@ export function WeeklyReport({ date }: Props) {
             は記録がありません。この{data.missing_dates.length}
             日は平均に含めていません。0kcalとして扱うと平均が実際より低く出るためです。
           </p>
-          <Link href="/meals" style={styles.calloutLink}>
+          <Link href={`/meals?date=${data.missing_dates[0]}`} style={styles.calloutLink}>
             あとから追加 →
           </Link>
         </div>

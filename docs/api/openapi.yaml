@@ -56,7 +56,9 @@ paths:
           in: query
           required: false
           schema: { type: string, format: date }
-          description: 指定日のみ返す。省略時は全件。
+          description: |
+            指定日のみ返す（表示用に品目名・推定kcal付きの DayMeal 形）。
+            省略時は全件（素の MealRecord 形）。
       responses:
         "200":
           description: 記録一覧。
@@ -68,7 +70,10 @@ paths:
                 properties:
                   meals:
                     type: array
-                    items: { $ref: "#/components/schemas/MealRecord" }
+                    items:
+                      oneOf:
+                        - $ref: "#/components/schemas/MealRecord"
+                        - $ref: "#/components/schemas/DayMeal"
     post:
       tags: [meals]
       summary: 食事を保存（explicit grams first・冪等ではない）
@@ -88,6 +93,31 @@ paths:
                 properties:
                   meal: { $ref: "#/components/schemas/MealRecord" }
         "422": { $ref: "#/components/responses/ValidationProblem" }
+
+  /api/meals/{meal_id}:
+    delete:
+      tags: [meals]
+      summary: 食事記録を1件削除（取り消し不可・UIは確認を挟む）
+      parameters:
+        - name: meal_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: 削除完了。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted]
+                properties:
+                  deleted: { type: boolean, const: true }
+        "404":
+          description: 指定 meal_id が存在しない。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
 
   /api/meals/usual:
     get:
@@ -244,6 +274,27 @@ components:
           properties:
             meal_id: { type: string }
             recorded_at: { type: string, format: date-time }
+
+    DayMeal:
+      type: object
+      required: [meal_id, date, meal_type, recorded_at, items, estimated_kcal]
+      properties:
+        meal_id: { type: string }
+        date: { type: string, format: date }
+        meal_type: { $ref: "#/components/schemas/MealType" }
+        recorded_at: { type: string, format: date-time }
+        items:
+          type: array
+          items:
+            type: object
+            required: [food_id, display_name, intake_g]
+            properties:
+              food_id: { type: string }
+              display_name: { type: string }
+              intake_g: { type: number }
+        estimated_kcal:
+          type: [number, "null"]
+          description: 表示用推定値。エネルギー値が計算不能なら null。
 
     FoodUnitOption:
       type: object

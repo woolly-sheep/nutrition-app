@@ -32,10 +32,13 @@ function implementedOperations(): Set<string> {
   const operations = new Set<string>();
   for (const file of routeFiles(ROUTES_DIR)) {
     const relativeDir = path.dirname(path.relative(ROUTES_DIR, file));
-    const route =
+    const route = (
       relativeDir === "."
         ? "/api"
-        : `/api/${relativeDir.split(path.sep).join("/")}`;
+        : `/api/${relativeDir.split(path.sep).join("/")}`
+    )
+      // Next.js dynamic segments ([id]) ↔ OpenAPI path params ({id})
+      .replace(/\[([^\]]+)\]/g, "{$1}");
     const source = readFileSync(file, "utf-8");
     for (const method of HTTP_METHODS) {
       const exported = new RegExp(

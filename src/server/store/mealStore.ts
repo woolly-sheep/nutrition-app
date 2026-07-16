@@ -40,6 +40,17 @@ export async function appendMeal(input: CreateMealRequest): Promise<MealRecord> 
   return meal;
 }
 
+/** Removes one meal. Returns false when the id does not exist. */
+export async function deleteMeal(mealId: string): Promise<boolean> {
+  const meals = await readAll();
+  const remaining = meals.filter((meal) => meal.meal_id !== mealId);
+  if (remaining.length === meals.length) {
+    return false;
+  }
+  await writeAll(remaining);
+  return true;
+}
+
 async function readAll(): Promise<MealRecord[]> {
   try {
     const raw = await readFile(mealsFile(), "utf-8");
