@@ -9,9 +9,11 @@ type Props = {
   percent: number;
   /** Accessible description, e.g. "ビタミンD 45%" */
   label: string;
+  /** Bar thickness; compact rows use a thinner bar (v0.4 §1). */
+  height?: number;
 };
 
-export function BulletBar({ percent, label }: Props) {
+export function BulletBar({ percent, label, height = 10 }: Props) {
   const clamped = Math.max(0, percent);
   const fillPercent = Math.min(clamped, 100);
   const overflowPercent = Math.min(Math.max(clamped - 100, 0), 100);
@@ -22,8 +24,8 @@ export function BulletBar({ percent, label }: Props) {
       aria-label={label}
       style={{
         position: "relative",
-        height: "10px",
-        borderRadius: "5px",
+        height: `${height}px`,
+        borderRadius: `${height / 2}px`,
         overflow: "hidden",
         // remainder: hatched pattern, readable without color vision
         background:
