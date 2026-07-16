@@ -1,0 +1,479 @@
+openapi: 3.1.0
+info:
+  title: Nutrition App MVP API
+  version: 0.1.0
+  description: |
+    栄養管理アプリ MVP の API 契約の正本（application design v0.2 の
+    API Contract Gate 成果物）。
+
+    前提と決定:
+    - 単一ユーザーのローカル動作。認証・Authorization Matrix は未実装
+      （decision-20260715-mvp-data-api-simplification）。認証導入時に
+      全エンドポイントへ owner check を追加する。
+    - エンドポイント名は MVP では /api/* 系を正式採用
+      （decision-20260716-openapi-mvp-contract）。マルチユーザー化時に
+      handoff 05_api_design_v0_2 の /user-food-items / /nutrition-analyses
+      系への移行を再検討する。
+    - 検索の空結果・欠食日・候補なしは正常系（200）として扱う。
+    - バリデーションエラーは 422 + Problem Details（フィールドコードのみ。
+      送信値は含めない）。
+    - ログには request/response body・食事内容・分析結果を残さない
+      （logging allowlist）。
+    - POST /api/meals は冪等ではない（再送で二重記録になる）。クライアントは
+      保存完了までボタンを無効化する。
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: foods
+  - name: meals
+  - name: profile
+  - name: analysis
+
+paths:
+  /api/foods:
+    get:
+      tags: [foods]
+      summary: FoodMaster 検索（公開カタログ・MVP 40食品）
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+          description: 部分一致（display_name / official_food_name）。空なら全件。
+      responses:
+        "200":
+          description: 検索結果。0件も正常系（message 付き）。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FoodSearchResponse" }
+
+  /api/meals:
+    get:
+      tags: [meals]
+      summary: 食事記録の一覧
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: 指定日のみ返す。省略時は全件。
+      responses:
+        "200":
+          description: 記録一覧。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [meals]
+                properties:
+                  meals:
+                    type: array
+                    items: { $ref: "#/components/schemas/MealRecord" }
+    post:
+      tags: [meals]
+      summary: 食事を保存（explicit grams first・冪等ではない）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateMealRequest" }
+      responses:
+        "201":
+          description: 保存済みの記録。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [meal]
+                properties:
+                  meal: { $ref: "#/components/schemas/MealRecord" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+
+  /api/meals/usual:
+    get:
+      tags: [meals]
+      summary: いつもの食事（直近14日の記録からの自動導出・保存なし）
+      parameters:
+        - name: meal_type
+          in: query
+          required: true
+          schema: { $ref: "#/components/schemas/MealType" }
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: 頻出食品（0件も正常系）。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UsualFoodsResponse" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+
+  /api/profile:
+    get:
+      tags: [profile]
+      summary: 基準値区分（年齢帯×性別）のローカル設定を取得
+      responses:
+        "200":
+          description: 未設定時は profile が null。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProfileResponse" }
+    put:
+      tags: [profile]
+      summary: 基準値区分を設定（冪等）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Profile" }
+      responses:
+        "200":
+          description: 保存済みの区分。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProfileResponse" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+
+  /api/analysis:
+    get:
+      tags: [analysis]
+      summary: 日次サマリー / 週次充足率レポート
+      description: |
+        period=daily（既定）: 当日の摂取推定 → 基準値判定 → safe wording。
+        period=weekly: 月曜始まりの週を要求日まで評価。欠食日は平均から
+        除外する（0埋めしない）。区分未設定は profile_required=true、
+        記録なしは has_records=false / recorded_dates で表現し、
+        いずれも正常系（200）。
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: period
+          in: query
+          required: false
+          schema: { type: string, enum: [daily, weekly], default: daily }
+      responses:
+        "200":
+          description: 分析結果（推定値・免責付き）。
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/DailyAnalysisResponse"
+                  - $ref: "#/components/schemas/WeeklyAnalysisResponse"
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+
+  /api/analysis/candidates:
+    get:
+      tags: [analysis]
+      summary: 不足を補う候補（当日の分析コンテキストに紐づく）
+      description: |
+        recommendation boundary 準拠。分析コンテキストがない日
+        （記録なし・区分未設定）は has_analysis=false・候補 0 件を返す
+        （正常系）。応答には必ず notice（摂取の推奨ではない旨）を含む。
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: 候補（0件も正常系）。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FoodCandidatesResponse" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+
+components:
+  responses:
+    ValidationProblem:
+      description: |
+        バリデーションエラー。errors はフィールドコードのみで、
+        送信された値そのものは含めない。
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ProblemDetails" }
+
+  schemas:
+    ProblemDetails:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    MealType:
+      type: string
+      enum: [breakfast, lunch, dinner, snack]
+
+    MealItem:
+      type: object
+      required: [food_id, intake_g]
+      properties:
+        food_id: { type: string }
+        intake_g:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 5000
+          description: グラムのみ（explicit grams first・自動単位換算なし）。
+
+    CreateMealRequest:
+      type: object
+      required: [date, meal_type, items]
+      properties:
+        date: { type: string, format: date }
+        meal_type: { $ref: "#/components/schemas/MealType" }
+        items:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: { $ref: "#/components/schemas/MealItem" }
+
+    MealRecord:
+      allOf:
+        - $ref: "#/components/schemas/CreateMealRequest"
+        - type: object
+          required: [meal_id, recorded_at]
+          properties:
+            meal_id: { type: string }
+            recorded_at: { type: string, format: date-time }
+
+    FoodUnitOption:
+      type: object
+      required: [display_unit, representative_weight_g, confidence_level, warning_code]
+      properties:
+        display_unit: { type: string }
+        representative_weight_g:
+          type: [number, "null"]
+          description: 公的根拠が弱い単位は null（表示のみ・入力はg）。
+        confidence_level: { type: string }
+        warning_code: { type: [string, "null"] }
+
+    FoodSearchItem:
+      type: object
+      required: [food_id, display_name, official_food_name, energy_kcal_per_100g, unit_options]
+      properties:
+        food_id: { type: string }
+        display_name: { type: string }
+        official_food_name: { type: string }
+        energy_kcal_per_100g:
+          type: [number, "null"]
+          description: 公式値が非数値の場合は null（再計算・推測なし）。
+        unit_options:
+          type: array
+          items: { $ref: "#/components/schemas/FoodUnitOption" }
+
+    FoodSearchResponse:
+      type: object
+      required: [foods]
+      properties:
+        foods:
+          type: array
+          items: { $ref: "#/components/schemas/FoodSearchItem" }
+        message:
+          type: string
+          description: 0件時のみ。エラーではなく正常な検索結果。
+
+    UsualFoodsResponse:
+      type: object
+      required: [meal_type, items]
+      properties:
+        meal_type: { $ref: "#/components/schemas/MealType" }
+        items:
+          type: array
+          items:
+            type: object
+            required: [food_id, display_name, intake_g, estimated_kcal, occurrences]
+            properties:
+              food_id: { type: string }
+              display_name: { type: string }
+              intake_g: { type: number }
+              estimated_kcal: { type: [number, "null"] }
+              occurrences: { type: integer }
+
+    Profile:
+      type: object
+      required: [sex, ageBand]
+      properties:
+        sex: { type: string, enum: [male, female] }
+        ageBand:
+          type: string
+          enum: [adult_18_29, adult_30_49, adult_50_64, adult_65_74, adult_75_plus]
+
+    ProfileResponse:
+      type: object
+      required: [profile]
+      properties:
+        profile:
+          oneOf:
+            - $ref: "#/components/schemas/Profile"
+            - type: "null"
+
+    AnalysisNutrientItem:
+      type: object
+      required: [nutrient_code, nutrient_name, unit, reference_type, status, label, intake_amount, reference_value]
+      properties:
+        nutrient_code: { type: string }
+        nutrient_name: { type: string }
+        unit: { type: string }
+        reference_type: { type: string }
+        status: { type: string }
+        label:
+          type: string
+          description: SafeWordingService の傾向・推定表現（断定なし）。
+        note: { type: string }
+        intake_amount: { type: number }
+        reference_value:
+          type: [number, string, "null"]
+          description: 凍結seedの公式値そのまま（書き換えなし）。
+        percent_of_reference: { type: number }
+        remaining_amount: { type: number }
+
+    AnalysisExceedanceItem:
+      allOf:
+        - $ref: "#/components/schemas/AnalysisNutrientItem"
+        - type: object
+          required: [threshold_value, over_amount, percent_of_threshold, meal_breakdown]
+          properties:
+            threshold_value: { type: number }
+            over_amount: { type: number }
+            percent_of_threshold: { type: number }
+            meal_breakdown:
+              type: array
+              items:
+                type: object
+                required: [meal_type, amount]
+                properties:
+                  meal_type: { type: string }
+                  amount: { type: number }
+
+    DailyAnalysisResponse:
+      type: object
+      required: [date, profile, profile_required, has_records, summary, warning_codes, disclaimer, sources]
+      properties:
+        date: { type: string, format: date }
+        profile:
+          oneOf:
+            - $ref: "#/components/schemas/Profile"
+            - type: "null"
+        profile_required: { type: boolean }
+        has_records:
+          type: boolean
+          description: false = 欠食日（0埋めした分析は返さない）。
+        summary:
+          oneOf:
+            - type: "null"
+            - type: object
+              required: [achieved, insufficient, comparable_count, at_least_80_count, within_goal_count, ul_reached, dg_over]
+              properties:
+                achieved:
+                  type: array
+                  items: { $ref: "#/components/schemas/AnalysisNutrientItem" }
+                insufficient:
+                  type: array
+                  items: { $ref: "#/components/schemas/AnalysisNutrientItem" }
+                comparable_count: { type: integer }
+                at_least_80_count: { type: integer }
+                within_goal_count: { type: integer }
+                ul_reached:
+                  type: array
+                  items: { $ref: "#/components/schemas/AnalysisExceedanceItem" }
+                dg_over:
+                  type: array
+                  items: { $ref: "#/components/schemas/AnalysisExceedanceItem" }
+        warning_codes:
+          type: array
+          items: { type: string }
+          description: 計算警告コードのみ（食事内容は含めない）。
+        disclaimer: { type: string }
+        sources:
+          type: array
+          items: { type: string }
+
+    WeeklyAnalysisResponse:
+      type: object
+      required: [date, week_start, week_end, profile, profile_required, recorded_dates, missing_dates, nutrients, patterns, disclaimer, sources]
+      properties:
+        date: { type: string, format: date }
+        week_start: { type: string, format: date }
+        week_end: { type: string, format: date }
+        profile:
+          oneOf:
+            - $ref: "#/components/schemas/Profile"
+            - type: "null"
+        profile_required: { type: boolean }
+        recorded_dates:
+          type: array
+          items: { type: string, format: date }
+        missing_dates:
+          type: array
+          items: { type: string, format: date }
+          description: 平均から除外した欠食日（0埋めしない）。
+        nutrients:
+          type: array
+          items:
+            type: object
+            required: [nutrient_code, nutrient_name, unit, average_percent, days_below_50, days_achieved, recorded_days, daily]
+            properties:
+              nutrient_code: { type: string }
+              nutrient_name: { type: string }
+              unit: { type: string }
+              average_percent: { type: number }
+              days_below_50: { type: integer }
+              days_achieved: { type: integer }
+              recorded_days: { type: integer }
+              daily:
+                type: array
+                items:
+                  type: object
+                  required: [date, percent]
+                  properties:
+                    date: { type: string, format: date }
+                    percent: { type: [number, "null"] }
+        patterns:
+          type: array
+          items:
+            type: object
+            required: [nutrient_code, nutrient_name, days_below_50, recorded_days]
+            properties:
+              nutrient_code: { type: string }
+              nutrient_name: { type: string }
+              days_below_50: { type: integer }
+              recorded_days: { type: integer }
+        disclaimer: { type: string }
+        sources:
+          type: array
+          items: { type: string }
+
+    FoodCandidatesResponse:
+      type: object
+      required: [date, has_analysis, candidates, notice]
+      properties:
+        date: { type: string, format: date }
+        has_analysis: { type: boolean }
+        candidates:
+          type: array
+          items:
+            type: object
+            required: [food_id, display_name, portion_g, portion_label, estimated_kcal, target_nutrient_code, target_nutrient_name, unit, amount_in_portion, percent_of_shortfall]
+            properties:
+              food_id: { type: string }
+              display_name: { type: string }
+              portion_g: { type: number }
+              portion_label: { type: [string, "null"] }
+              estimated_kcal: { type: [number, "null"] }
+              target_nutrient_code: { type: string }
+              target_nutrient_name: { type: string }
+              unit: { type: string }
+              amount_in_portion: { type: number }
+              percent_of_shortfall: { type: number }
+        notice:
+          type: string
+          description: 必須注記（摂取の推奨ではない旨）。省略禁止。
