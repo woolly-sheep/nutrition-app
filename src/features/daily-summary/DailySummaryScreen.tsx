@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AchievementBadge } from "../../components/AchievementBadge";
+import { BulletBar } from "../../components/BulletBar";
 import { EmptyState } from "../../components/EmptyState";
 import { RemainingCard, formatAmount } from "../../components/RemainingCard";
 import { SourceFooter } from "../../components/SourceFooter";
@@ -139,21 +140,43 @@ export function DailySummaryScreen() {
                   {formatAmount(restShortfalls[0].remaining_amount ?? 0)}
                   {restShortfalls[0].unit} ▾
                 </summary>
-                {restShortfalls.map((item) => (
-                  <RemainingCard
-                    key={item.nutrient_code}
-                    nutrientName={item.nutrient_name}
-                    unit={item.unit}
-                    intakeAmount={item.intake_amount}
-                    referenceValue={
-                      typeof item.reference_value === "number"
-                        ? item.reference_value
-                        : 0
-                    }
-                    remainingAmount={item.remaining_amount ?? 0}
-                    percent={item.percent_of_reference ?? 0}
-                  />
-                ))}
+                {/* expanded state = compact rows, not repeated big
+                    figures (UI design v0.4 §1: one primary figure per
+                    screen, density stays low) */}
+                <ul style={styles.compactList}>
+                  {restShortfalls.map((item) => (
+                    <li key={item.nutrient_code} style={styles.compactRow}>
+                      <div style={styles.compactHead}>
+                        <span style={{ fontWeight: 500 }}>
+                          {item.nutrient_name}
+                        </span>
+                        <span
+                          style={{
+                            color: "var(--color-subtext)",
+                            fontSize: "12px",
+                          }}
+                        >
+                          {formatAmount(item.intake_amount)} /{" "}
+                          {typeof item.reference_value === "number"
+                            ? formatAmount(item.reference_value)
+                            : "—"}{" "}
+                          {item.unit}
+                        </span>
+                        <span style={{ fontSize: "14px" }}>
+                          あと {formatAmount(item.remaining_amount ?? 0)}
+                          {item.unit}
+                        </span>
+                      </div>
+                      <div style={styles.compactBar}>
+                        <BulletBar
+                          percent={item.percent_of_reference ?? 0}
+                          label={`${item.nutrient_name} ${Math.round(item.percent_of_reference ?? 0)}%`}
+                          height={6}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </details>
             )}
           </>
@@ -196,5 +219,24 @@ const styles = {
   sectionTitle: {
     fontSize: "15px",
     margin: "0 0 8px",
+  },
+  compactList: {
+    listStyle: "none",
+    margin: "8px 0 0",
+    padding: 0,
+  },
+  compactRow: {
+    padding: "8px 0",
+    borderBottom: "1px solid var(--color-surface)",
+  },
+  compactHead: {
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: "8px",
+    fontSize: "14px",
+  },
+  compactBar: {
+    marginTop: "4px",
   },
 } satisfies Record<string, React.CSSProperties>;
