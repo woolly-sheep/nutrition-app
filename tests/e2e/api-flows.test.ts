@@ -176,6 +176,23 @@ describe("API flows (e2e through route handlers)", () => {
       expect(meal.estimated_kcal).toBeGreaterThan(0);
     }
 
+    // edit: change the first meal's grams via PUT, keep everything else
+    const editable = enriched.meals[0];
+    const edited = await mealDeleteRoute.PUT(
+      new Request(`http://localhost:3000/api/meals/${editable.meal_id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [{ food_id: editable.items[0].food_id, intake_g: 999 }],
+        }),
+      }),
+      { params: Promise.resolve({ meal_id: editable.meal_id }) },
+    );
+    expect(edited.status).toBe(200);
+    const editedBody = await edited.json();
+    expect(editedBody.meal.items[0].intake_g).toBe(999);
+    expect(editedBody.meal.date).toBe(editable.date);
+
     const target = enriched.meals[0].meal_id as string;
     const missing = await mealDeleteRoute.DELETE(
       new Request("http://localhost:3000/api/meals/meal_nonexistent", {

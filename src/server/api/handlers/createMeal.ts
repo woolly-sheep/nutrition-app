@@ -61,15 +61,20 @@ function validate(body: unknown, seed: Seed): string[] {
   if (!MEAL_TYPES.includes(meal_type as MealType)) {
     errors.push("invalid_meal_type");
   }
+  errors.push(...validateItems(items, seed));
+  return errors;
+}
+
+/** Shared by create (POST) and item edit (PUT) — same rules for items. */
+export function validateItems(items: unknown, seed: Seed): string[] {
   if (!Array.isArray(items) || items.length === 0) {
-    errors.push("empty_items");
-    return errors;
+    return ["empty_items"];
   }
   if (items.length > MAX_ITEMS_PER_MEAL) {
-    errors.push("too_many_items");
-    return errors;
+    return ["too_many_items"];
   }
 
+  const errors: string[] = [];
   const knownFoodIds = new Set(seed.foodMaster.map((food) => food.food_id));
   for (const [index, item] of items.entries()) {
     errors.push(...validateItem(item, index, knownFoodIds));
