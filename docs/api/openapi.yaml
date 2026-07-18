@@ -95,6 +95,43 @@ paths:
         "422": { $ref: "#/components/responses/ValidationProblem" }
 
   /api/meals/{meal_id}:
+    put:
+      tags: [meals]
+      summary: 記録の品目を差し替え（g修正・品目削除。区分・日付は不変）
+      parameters:
+        - name: meal_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  items: { $ref: "#/components/schemas/MealItem" }
+      responses:
+        "200":
+          description: 更新後の記録。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [meal]
+                properties:
+                  meal: { $ref: "#/components/schemas/MealRecord" }
+        "404":
+          description: 指定 meal_id が存在しない。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
     delete:
       tags: [meals]
       summary: 食事記録を1件削除（取り消し不可・UIは確認を挟む）

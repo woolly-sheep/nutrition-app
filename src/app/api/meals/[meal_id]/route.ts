@@ -1,13 +1,26 @@
-// Thin HTTP entrypoint. Implementation lives in src/server/store.
-// Never log meal contents here (logging allowlist).
+// Thin HTTP entrypoint. Implementation lives in src/server/api/handlers
+// and src/server/store. Never log meal contents here (logging allowlist).
 
 import { NextResponse } from "next/server";
+import { updateMeal } from "../../../../server/api/handlers/updateMeal";
 import { deleteMeal } from "../../../../server/store/mealStore";
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ meal_id: string }> },
-) {
+type RouteContext = { params: Promise<{ meal_id: string }> };
+
+export async function PUT(request: Request, { params }: RouteContext) {
+  const { meal_id } = await params;
+  const body: unknown = await request.json().catch(() => null);
+  const result = await updateMeal(meal_id, body);
+
+  if (!result.ok) {
+    return NextResponse.json(result.problem, {
+      status: result.problem.status,
+    });
+  }
+  return NextResponse.json({ meal: result.meal });
+}
+
+export async function DELETE(_request: Request, { params }: RouteContext) {
   const { meal_id } = await params;
   const deleted = await deleteMeal(meal_id);
   if (!deleted) {

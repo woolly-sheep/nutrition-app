@@ -40,6 +40,27 @@ export async function appendMeal(input: CreateMealRequest): Promise<MealRecord> 
   return meal;
 }
 
+/**
+ * Replaces one meal's items (grams fixes / item removal — UI design
+ * v0.7). Date, meal type, and timestamps stay untouched.
+ * Returns the updated record, or null when the id does not exist.
+ */
+export async function updateMealItems(
+  mealId: string,
+  items: CreateMealRequest["items"],
+): Promise<MealRecord | null> {
+  const meals = await readAll();
+  const index = meals.findIndex((meal) => meal.meal_id === mealId);
+  if (index === -1) {
+    return null;
+  }
+  const updated: MealRecord = { ...meals[index], items };
+  const next = [...meals];
+  next[index] = updated;
+  await writeAll(next);
+  return updated;
+}
+
 /** Removes one meal. Returns false when the id does not exist. */
 export async function deleteMeal(mealId: string): Promise<boolean> {
   const meals = await readAll();

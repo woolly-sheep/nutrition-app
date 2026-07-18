@@ -39,6 +39,10 @@ export function MealEntryScreen() {
   const [date, setDate] = useState<string>(todayIsoDate());
   const [savedMeals, setSavedMeals] = useState<readonly DayMeal[]>([]);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  const [editingMealId, setEditingMealId] = useState<string | null>(null);
+  const [editItems, setEditItems] = useState<
+    readonly { foodId: string; displayName: string; gramsText: string }[]
+  >([]);
 
   const today = todayIsoDate();
 
@@ -86,7 +90,51 @@ export function MealEntryScreen() {
     }
     setDate(next);
     setConfirmingDelete(null);
+    setEditingMealId(null);
     setSaveState("idle");
+  };
+
+  const startEditing = (meal: DayMeal) => {
+    setEditingMealId(meal.meal_id);
+    setConfirmingDelete(null);
+    setEditItems(
+      meal.items.map((item) => ({
+        foodId: item.food_id,
+        displayName: item.display_name,
+        gramsText: String(item.intake_g),
+      })),
+    );
+  };
+
+  const canSaveEdit =
+    editItems.length > 0 &&
+    editItems.every((item) => {
+      const grams = Number(item.gramsText);
+      return Number.isFinite(grams) && grams > 0;
+    });
+
+  const handleEditSave = async (mealId: string) => {
+    if (!canSaveEdit) {
+      return;
+    }
+    try {
+      const response = await fetch(`/api/meals/${mealId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: editItems.map((item) => ({
+            food_id: item.foodId,
+            intake_g: Number(item.gramsText),
+          })),
+        }),
+      });
+      if (response.ok) {
+        setEditingMealId(null);
+        void loadShortcuts();
+      }
+    } catch {
+      // card stays in edit mode; the user can retry or cancel
+    }
   };
 
   const handleDelete = async (mealId: string) => {
@@ -352,41 +400,121 @@ export function MealEntryScreen() {
                     </span>
                   )}
                 </div>
-                <p style={{ margin: "4px 0 8px", fontSize: "14px" }}>
-                  {meal.items
-                    .map((item) => `${item.display_name} ${item.intake_g}g`)
-                    .join(" · ")}
-                </p>
-                {confirmingDelete === meal.meal_id ? (
-                  <div style={styles.confirmRow}>
-                    <span style={{ fontSize: "13px" }}>
-                      この記録を削除する？（取り消せません）
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => void handleDelete(meal.meal_id)}
-                      style={styles.confirmDelete}
-                    >
-                      削除する
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmingDelete(null)}
-                      style={styles.cancelDelete}
-                    >
-                      やめる
-                    </button>
+                {editingMealId === meal.meal_id ? (
+                  <div>
+                    <ul style={styles.shortcutList}>
+                      {editItems.map((item, index) => (
+                        <li key={`${item.foodId}-${index}`} style={styles.editRow}>
+                          <span style={{ flex: 1, fontSize: "14px" }}>
+                            {item.displayName}
+                          </span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min={1}
+                            value={item.gramsText}
+                            onChange={(event) =>
+                              setEditItems(
+                                editItems.map((current, i) =>
+                                  i === index
+                                    ? { ...current, gramsText: event.target.value }
+                                    : current,
+                                ),
+                              )
+                            }
+                            aria-label={`${item.displayName}のグラム`}
+                            style={styles.editGramsInput}
+                          />
+                          <span style={styles.subtext}>g</span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditItems(editItems.filter((_, i) => i !== index))
+                            }
+                            aria-label={`${item.displayName}を取り消す`}
+                            style={styles.cancelDelete}
+                          >
+                            取消
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    {editItems.length === 0 && (
+                      <p style={styles.subtext}>
+                        品目が0件になる場合は、記録の削除を使ってください。
+                      </p>
+                    )}
+                    <div style={styles.confirmRow}>
+                      <button
+                        type="button"
+                        onClick={() => void handleEditSave(meal.meal_id)}
+                        disabled={!canSaveEdit}
+                        style={{
+                          ...styles.confirmDelete,
+                          borderColor: "var(--color-primary)",
+                          color: "var(--color-primary)",
+                          opacity: canSaveEdit ? 1 : 0.5,
+                        }}
+                      >
+                        保存する
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingMealId(null)}
+                        style={styles.cancelDelete}
+                      >
+                        やめる
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => setConfirmingDelete(meal.meal_id)}
-                    aria-label={`${MEAL_TYPE_LABELS[meal.meal_type]}の記録を削除`}
-                    style={styles.deleteButton}
-                  >
-                    削除
-                  </button>
+                  <p style={{ margin: "4px 0 8px", fontSize: "14px" }}>
+                    {meal.items
+                      .map((item) => `${item.display_name} ${item.intake_g}g`)
+                      .join(" · ")}
+                  </p>
                 )}
+                {editingMealId !== meal.meal_id &&
+                  (confirmingDelete === meal.meal_id ? (
+                    <div style={styles.confirmRow}>
+                      <span style={{ fontSize: "13px" }}>
+                        この記録を削除する？（取り消せません）
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void handleDelete(meal.meal_id)}
+                        style={styles.confirmDelete}
+                      >
+                        削除する
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingDelete(null)}
+                        style={styles.cancelDelete}
+                      >
+                        やめる
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", gap: "4px" }}>
+                      <button
+                        type="button"
+                        onClick={() => startEditing(meal)}
+                        aria-label={`${MEAL_TYPE_LABELS[meal.meal_type]}の記録を編集`}
+                        style={styles.deleteButton}
+                      >
+                        編集
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingDelete(meal.meal_id)}
+                        aria-label={`${MEAL_TYPE_LABELS[meal.meal_type]}の記録を削除`}
+                        style={styles.deleteButton}
+                      >
+                        削除
+                      </button>
+                    </div>
+                  ))}
               </li>
             ))}
           </ul>
@@ -465,6 +593,21 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "baseline",
     gap: "8px",
+  },
+  editRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    minHeight: "var(--tap-target-min)",
+    padding: "2px 0",
+  },
+  editGramsInput: {
+    width: "80px",
+    minHeight: "var(--tap-target-min)",
+    padding: "0 10px",
+    border: "1px solid var(--color-subtext)",
+    borderRadius: "8px",
+    fontSize: "16px",
   },
   confirmRow: {
     display: "flex",
