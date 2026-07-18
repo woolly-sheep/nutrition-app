@@ -18,13 +18,16 @@ type Props = {
 };
 
 export function WeeklyReport({ date }: Props) {
+  // v0.8: week navigation — anchor is the week's evaluation end date
+  // (today for the current week, that week's Sunday for past weeks)
+  const [anchor, setAnchor] = useState(date);
   const [data, setData] = useState<WeeklyAnalysisResponse | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
         const response = await fetch(
-          `/api/analysis?date=${date}&period=weekly`,
+          `/api/analysis?date=${anchor}&period=weekly`,
         );
         if (!response.ok) {
           return;
@@ -34,13 +37,58 @@ export function WeeklyReport({ date }: Props) {
         // weekly is supplementary — the daily section already reports errors
       }
     })();
-  }, [date]);
+  }, [anchor]);
 
   if (data === null || data.profile_required) {
     return null;
   }
+
+  const isCurrentWeek = data.week_end >= date;
+  const goPreviousWeek = () => setAnchor(isoDatePlusDays(data.week_start, -1));
+  const goNextWeek = () => {
+    const nextSunday = isoDatePlusDays(data.week_end, 7);
+    setAnchor(nextSunday >= date ? date : nextSunday);
+  };
+
+  const weekNav = (
+    <div style={styles.weekNav}>
+      <button
+        type="button"
+        onClick={goPreviousWeek}
+        aria-label="前の週へ"
+        style={styles.weekNavButton}
+      >
+        ←
+      </button>
+      <div style={{ flex: 1 }}>
+        <h2 style={{ fontSize: "15px", margin: 0 }}>充足率レポート — 週平均</h2>
+        <p style={styles.subtext}>
+          {formatRange(data.week_start, data.week_end)}
+          {data.recorded_dates.length > 0 &&
+            ` · 記録がある${data.recorded_dates.length}日分で算出`}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={goNextWeek}
+        disabled={isCurrentWeek}
+        aria-label="次の週へ"
+        style={{ ...styles.weekNavButton, opacity: isCurrentWeek ? 0.3 : 1 }}
+      >
+        →
+      </button>
+    </div>
+  );
+
   if (data.recorded_dates.length === 0) {
-    return null;
+    return (
+      <section style={{ marginTop: "32px" }}>
+        {weekNav}
+        <p style={{ ...styles.subtext, marginTop: "12px" }}>
+          この週の記録はありません。
+        </p>
+      </section>
+    );
   }
 
   const dayCount = data.nutrients[0]?.daily.length ?? 0;
@@ -50,13 +98,7 @@ export function WeeklyReport({ date }: Props) {
 
   return (
     <section style={{ marginTop: "32px" }}>
-      <h2 style={{ fontSize: "15px", margin: "0 0 4px" }}>
-        充足率レポート — 週平均
-      </h2>
-      <p style={styles.subtext}>
-        {formatRange(data.week_start, data.week_end)} · 記録がある
-        {data.recorded_dates.length}日分で算出
-      </p>
+      {weekNav}
 
       {data.missing_dates.length > 0 && (
         <div style={styles.infoCallout}>
@@ -138,6 +180,12 @@ export function WeeklyReport({ date }: Props) {
   );
 }
 
+function isoDatePlusDays(date: string, days: number): string {
+  const base = new Date(`${date}T00:00:00Z`);
+  base.setUTCDate(base.getUTCDate() + days);
+  return base.toISOString().slice(0, 10);
+}
+
 function formatRange(start: string, end: string): string {
   return `${formatShortDate(start)} − ${formatShortDate(end)}`;
 }
@@ -151,6 +199,21 @@ function formatShortDate(isoDate: string): string {
 }
 
 const styles = {
+  weekNav: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  weekNavButton: {
+    minHeight: "var(--tap-target-min)",
+    minWidth: "var(--tap-target-min)",
+    border: "1px solid var(--color-surface)",
+    borderRadius: "8px",
+    background: "var(--color-base)",
+    color: "var(--color-primary)",
+    fontSize: "16px",
+    cursor: "pointer",
+  },
   subtext: {
     color: "var(--color-subtext)",
     fontSize: "12px",

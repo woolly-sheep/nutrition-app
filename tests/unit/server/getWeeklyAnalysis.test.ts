@@ -62,6 +62,22 @@ describe("getWeeklyAnalysis", () => {
     ]);
   });
 
+  it("evaluates all seven days for a past week (Sunday anchor)", async () => {
+    // 2026-07-12 is a Sunday → evaluate Mon 7/6 .. Sun 7/12 in full.
+    const result = await getWeeklyAnalysis("2026-07-12", {
+      seed,
+      loadProfile: async () => profile,
+      loadMeals: async (date) =>
+        date === "2026-07-08"
+          ? [meal("2026-07-08", [{ food_id: "food_kiwi_raw_001", intake_g: 100 }])]
+          : [],
+    });
+    expect(result.week_start).toBe("2026-07-06");
+    expect(result.week_end).toBe("2026-07-12");
+    expect(result.recorded_dates).toEqual(["2026-07-08"]);
+    expect(result.missing_dates).toHaveLength(6);
+  });
+
   it("requires a profile before reporting", async () => {
     const result = await getWeeklyAnalysis("2026-07-15", {
       seed,
