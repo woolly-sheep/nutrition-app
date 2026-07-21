@@ -5,10 +5,18 @@
 
 export type FoodUnitOption = {
   display_unit: string;
-  /** Official representative weight; null when no reliable public source. */
+  /**
+   * Representative weight for one unit; null when no usable value exists.
+   * From the frozen seed when source is "official_seed", or from the
+   * standard weight reference (a 推定 estimate) when "reference_estimate".
+   */
   representative_weight_g: number | null;
   confidence_level: string;
   warning_code: string | null;
+  /** Where the weight came from — drives the 推定 labelling in the UI. */
+  source: "official_seed" | "reference_estimate";
+  /** Source note for reference estimates; null for seed-only options. */
+  source_note: string | null;
 };
 
 export type FoodSearchItem = {

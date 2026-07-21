@@ -106,6 +106,17 @@ export function MealEntryScreen() {
     );
   };
 
+  const handleAddToEdit = (item: DraftItem) => {
+    setEditItems((current) => [
+      ...current,
+      {
+        foodId: item.foodId,
+        displayName: item.displayName,
+        gramsText: String(item.intakeG),
+      },
+    ]);
+  };
+
   const canSaveEdit =
     editItems.length > 0 &&
     editItems.every((item) => {
@@ -444,6 +455,10 @@ export function MealEntryScreen() {
                         品目が0件になる場合は、記録の削除を使ってください。
                       </p>
                     )}
+                    <div style={styles.editAddBox}>
+                      <p style={styles.sectionTitle}>食材を追加</p>
+                      <FoodSearchBox onAdd={handleAddToEdit} />
+                    </div>
                     <div style={styles.confirmRow}>
                       <button
                         type="button"
@@ -600,6 +615,11 @@ const styles = {
     gap: "8px",
     minHeight: "var(--tap-target-min)",
     padding: "2px 0",
+  },
+  editAddBox: {
+    marginTop: "12px",
+    paddingTop: "12px",
+    borderTop: "1px solid var(--color-surface)",
   },
   editGramsInput: {
     width: "80px",

@@ -6,8 +6,11 @@ import type { FoodSearchItem } from "../../server/api/schemas/foods";
 
 /**
  * Search inside the 記録 tab (UI design v0.1 §4.2). Not a standalone
- * screen. Amounts are entered in grams only — unit conversions are shown
- * as reference text, never auto-applied (explicit grams first).
+ * screen. Amounts save in grams. Foods with a per-unit weight (seed or the
+ * standard weight reference) can be entered by count (個/枚/本 …); the count
+ * is multiplied by the estimated unit weight to grams. Direct grams input is
+ * always available. Reference weights are shown as 推定 (see
+ * docs/decisions/decision-20260721-standard-weight-reference.md).
  */
 
 export type DraftItem = {
@@ -28,6 +31,7 @@ export function FoodSearchBox({ onAdd }: Props) {
   const [emptyMessage, setEmptyMessage] = useState<string | null>(null);
   const [selected, setSelected] = useState<FoodSearchItem | null>(null);
   const [gramsText, setGramsText] = useState("");
+  const [countText, setCountText] = useState("");
 
   useEffect(() => {
     if (query.trim() === "") {
@@ -61,23 +65,49 @@ export function FoodSearchBox({ onAdd }: Props) {
   const grams = Number(gramsText);
   const gramsValid = Number.isFinite(grams) && grams > 0;
 
-  const handleAdd = () => {
-    if (!selected || !gramsValid) {
-      return;
-    }
+  // Units with a usable per-unit weight enable count input (seed or 推定).
+  const countableUnit =
+    selected?.unit_options.find(
+      (option) => option.representative_weight_g !== null,
+    ) ?? null;
+  const count = Number(countText);
+  const countValid = Number.isFinite(count) && count > 0;
+  const countGrams =
+    countableUnit && countValid
+      ? Math.round(count * (countableUnit.representative_weight_g as number))
+      : null;
+
+  const addGrams = (food: FoodSearchItem, intakeG: number) => {
     onAdd({
-      foodId: selected.food_id,
-      displayName: selected.display_name,
-      intakeG: grams,
+      foodId: food.food_id,
+      displayName: food.display_name,
+      intakeG,
       estimatedKcal:
-        selected.energy_kcal_per_100g === null
+        food.energy_kcal_per_100g === null
           ? null
-          : estimateIntakeAmount(grams, selected.energy_kcal_per_100g),
+          : estimateIntakeAmount(intakeG, food.energy_kcal_per_100g),
     });
     setSelected(null);
     setGramsText("");
+    setCountText("");
     setQuery("");
   };
+
+  const handleAddGrams = () => {
+    if (!selected || !gramsValid) {
+      return;
+    }
+    addGrams(selected, grams);
+  };
+
+  const handleAddCount = () => {
+    if (!selected || countGrams === null) {
+      return;
+    }
+    addGrams(selected, countGrams);
+  };
+
+  const unitLabel = (displayUnit: string) => displayUnit.replace(/^1/, "");
 
   return (
     <section>
@@ -101,7 +131,11 @@ export function FoodSearchBox({ onAdd }: Props) {
             <li key={food.food_id}>
               <button
                 type="button"
-                onClick={() => setSelected(food)}
+                onClick={() => {
+                  setSelected(food);
+                  setGramsText("");
+                  setCountText("");
+                }}
                 style={styles.resultRow}
               >
                 <span>{food.display_name}</span>
@@ -118,37 +152,78 @@ export function FoodSearchBox({ onAdd }: Props) {
       {selected !== null && (
         <div style={styles.gramsPanel}>
           <p style={{ margin: 0, fontWeight: 700 }}>{selected.display_name}</p>
-          {selected.unit_options
-            .filter((option) => option.representative_weight_g !== null)
-            .map((option) => (
-              <p key={option.display_unit} style={styles.subtext}>
-                参考: {option.display_unit} ≈ {option.representative_weight_g}g
-                （表示のみ・入力はgで行います）
+
+          {countableUnit !== null && (
+            <div style={styles.inputBlock}>
+              <p style={styles.inputLabel}>
+                個数で入力（{unitLabel(countableUnit.display_unit)}）
               </p>
-            ))}
-          <div style={styles.gramsRow}>
-            <input
-              type="number"
-              inputMode="decimal"
-              min={1}
-              value={gramsText}
-              onChange={(event) => setGramsText(event.target.value)}
-              placeholder="g"
-              aria-label="摂取量（グラム）"
-              style={styles.gramsInput}
-            />
-            <span>g</span>
-            <button
-              type="button"
-              onClick={handleAdd}
-              disabled={!gramsValid}
-              style={{
-                ...styles.addButton,
-                opacity: gramsValid ? 1 : 0.5,
-              }}
-            >
-              ＋追加
-            </button>
+              <div style={styles.gramsRow}>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={1}
+                  value={countText}
+                  onChange={(event) => setCountText(event.target.value)}
+                  placeholder="0"
+                  aria-label={`個数（${unitLabel(countableUnit.display_unit)}）`}
+                  style={styles.gramsInput}
+                />
+                <span>{unitLabel(countableUnit.display_unit)}</span>
+                <button
+                  type="button"
+                  onClick={handleAddCount}
+                  disabled={countGrams === null}
+                  style={{
+                    ...styles.addButton,
+                    opacity: countGrams === null ? 0.5 : 1,
+                  }}
+                >
+                  ＋追加
+                </button>
+              </div>
+              <p style={styles.subtext}>
+                {countableUnit.display_unit} ≈{" "}
+                {countableUnit.representative_weight_g}g（
+                {countableUnit.source === "reference_estimate"
+                  ? "一般的な目安・推定"
+                  : "推定"}
+                ）
+                {countGrams !== null && ` → 約 ${countGrams}g`}
+              </p>
+              {countableUnit.source === "reference_estimate" &&
+                countableUnit.source_note !== null && (
+                  <p style={styles.subtext}>出典: {countableUnit.source_note}</p>
+                )}
+            </div>
+          )}
+
+          <div style={styles.inputBlock}>
+            <p style={styles.inputLabel}>gで入力</p>
+            <div style={styles.gramsRow}>
+              <input
+                type="number"
+                inputMode="decimal"
+                min={1}
+                value={gramsText}
+                onChange={(event) => setGramsText(event.target.value)}
+                placeholder="g"
+                aria-label="摂取量（グラム）"
+                style={styles.gramsInput}
+              />
+              <span>g</span>
+              <button
+                type="button"
+                onClick={handleAddGrams}
+                disabled={!gramsValid}
+                style={{
+                  ...styles.addButton,
+                  opacity: gramsValid ? 1 : 0.5,
+                }}
+              >
+                ＋追加
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -196,6 +271,15 @@ const styles = {
     padding: "12px",
     borderRadius: "8px",
     background: "var(--color-surface)",
+  },
+  inputBlock: {
+    marginTop: "12px",
+  },
+  inputLabel: {
+    margin: 0,
+    fontSize: "13px",
+    fontWeight: 700,
+    color: "var(--color-text)",
   },
   gramsRow: {
     display: "flex",

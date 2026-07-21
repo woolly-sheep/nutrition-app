@@ -1,0 +1,17 @@
+[
+  { "food_id": "food_bread_white_001", "display_unit": "1枚", "typical_weight_g": 60, "confidence": "medium", "source": "公開目安量表に基づく概量（6枚切1枚）" },
+  { "food_id": "food_egg_raw_001", "display_unit": "1個", "typical_weight_g": 50, "confidence": "medium", "source": "公開目安量表に基づく概量（可食部・Mサイズ相当）" },
+  { "food_id": "food_tomato_raw_001", "display_unit": "1個", "typical_weight_g": 150, "confidence": "medium", "source": "公開目安量表に基づく概量" },
+  { "food_id": "food_carrot_raw_001", "display_unit": "1本", "typical_weight_g": 150, "confidence": "medium", "source": "公開目安量表に基づく概量（可食部）" },
+  { "food_id": "food_onion_raw_001", "display_unit": "1個", "typical_weight_g": 200, "confidence": "medium", "source": "公開目安量表に基づく概量（可食部）" },
+  { "food_id": "food_potato_001", "display_unit": "1個", "typical_weight_g": 150, "confidence": "medium", "source": "公開目安量表に基づく概量（可食部）" },
+  { "food_id": "food_sweet_potato_001", "display_unit": "1本", "typical_weight_g": 200, "confidence": "medium", "source": "公開目安量表に基づく概量（可食部）" },
+  { "food_id": "food_banana_raw_001", "display_unit": "1本", "typical_weight_g": 90, "confidence": "medium", "source": "公開目安量表に基づく概量（可食部）" },
+  { "food_id": "food_apple_raw_001", "display_unit": "1個", "typical_weight_g": 250, "confidence": "medium", "source": "公開目安量表に基づく概量（可食部）" },
+  { "food_id": "food_orange_raw_001", "display_unit": "1個", "typical_weight_g": 130, "confidence": "medium", "source": "公開目安量表に基づく概量（可食部）" },
+  { "food_id": "food_kiwi_raw_001", "display_unit": "1個", "typical_weight_g": 85, "confidence": "medium", "source": "公開目安量表に基づく概量（可食部）" },
+  { "food_id": "food_nattoo_001", "display_unit": "1パック", "typical_weight_g": 45, "confidence": "medium", "source": "公開目安量表に基づく概量" },
+  { "food_id": "food_tofu_firm_001", "display_unit": "1丁", "typical_weight_g": 300, "confidence": "medium", "source": "公開目安量表に基づく概量" },
+  { "food_id": "food_shiitake_001", "display_unit": "1個", "typical_weight_g": 15, "confidence": "medium", "source": "公開目安量表に基づく概量（可食部）" },
+  { "food_id": "food_cheese_001", "display_unit": "1枚", "typical_weight_g": 18, "confidence": "medium", "source": "公開目安量表に基づく概量（スライス1枚）" }
+]
