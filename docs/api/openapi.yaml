@@ -335,14 +335,21 @@ components:
 
     FoodUnitOption:
       type: object
-      required: [display_unit, representative_weight_g, confidence_level, warning_code]
+      required: [display_unit, representative_weight_g, confidence_level, warning_code, source, source_note]
       properties:
         display_unit: { type: string }
         representative_weight_g:
           type: [number, "null"]
-          description: 公的根拠が弱い単位は null（表示のみ・入力はg）。
+          description: 1単位あたりの重量。使える値が無ければ null（gで入力）。
         confidence_level: { type: string }
         warning_code: { type: [string, "null"] }
+        source:
+          type: string
+          enum: [official_seed, reference_estimate]
+          description: official_seed=凍結seed / reference_estimate=標準重量リファレンス（推定）。
+        source_note:
+          type: [string, "null"]
+          description: reference_estimate の出典。seed のみの場合は null。
 
     FoodSearchItem:
       type: object

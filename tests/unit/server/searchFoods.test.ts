@@ -31,14 +31,44 @@ describe("searchFoods", () => {
     expect(rice.energy_kcal_per_100g).toBe(156);
   });
 
-  it("exposes unit options as display support without converting", () => {
+  it("fills the seed unit gap with a standard weight estimate (卵 1個)", () => {
     const egg = searchFoods("卵", seed).foods.find(
       (food) => food.food_id === "food_egg_raw_001",
     );
     expect(egg).toBeDefined();
     const option = egg!.unit_options.find((o) => o.display_unit === "1個");
-    // representative weight has no reliable public source → stays null
-    expect(option?.representative_weight_g).toBeNull();
-    expect(option?.warning_code).toBe("LOW_CONFIDENCE_CONVERSION");
+    // Seed weight is null; the standard weight reference fills it as 推定.
+    expect(option?.representative_weight_g).toBe(50);
+    expect(option?.source).toBe("reference_estimate");
+    expect(option?.source_note).not.toBeNull();
+  });
+
+  it("never overwrites an official seed weight with a reference estimate", () => {
+    // A reference row must only fill gaps; supply a fake official weight and
+    // confirm the reference does not replace it.
+    const officialSeed = {
+      ...seed,
+      unitConversion: [
+        {
+          unit_conversion_id: "uc_test",
+          food_id: "food_egg_raw_001",
+          display_name: "卵",
+          display_unit: "1個",
+          representative_weight_g: 55,
+          confidence_level: "high",
+          source_note: "official",
+          source_type: "public_source",
+          warning_code: null,
+          review_status: "approved",
+          reviewer_note: null,
+        },
+      ],
+    };
+    const egg = searchFoods("卵", officialSeed).foods.find(
+      (food) => food.food_id === "food_egg_raw_001",
+    );
+    const option = egg!.unit_options.find((o) => o.display_unit === "1個");
+    expect(option?.representative_weight_g).toBe(55);
+    expect(option?.source).toBe("official_seed");
   });
 });
