@@ -3,28 +3,40 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AchievementBadge } from "../../components/AchievementBadge";
-import { BulletBar } from "../../components/BulletBar";
+import { BloomFlower } from "../../components/BloomFlower";
 import { EmptyState } from "../../components/EmptyState";
-import { RemainingCard, formatAmount } from "../../components/RemainingCard";
+import { WeekGarden } from "../../components/WeekGarden";
+import { formatAmount } from "../../components/RemainingCard";
 import { SourceFooter } from "../../components/SourceFooter";
-import type { DailyAnalysisResponse } from "../../server/api/schemas/analysis";
+import { buildBloomModel } from "../../domain/analysis/nutrientGroups";
+import { buildWeekGarden, type GardenDay } from "../../domain/analysis/weekGarden";
+import type {
+  DailyAnalysisResponse,
+  WeeklyAnalysisResponse,
+} from "../../server/api/schemas/analysis";
+import type { FoodCandidatesResponse } from "../../server/api/handlers/getFoodCandidates";
 import { AGE_BAND_LABELS, ProfileSetup, SEX_LABELS } from "./ProfileSetup";
 
 /**
- * Home daily summary (UI design §4.1 / exploration 5b):
- * achievements first, shortfalls top-2 + collapsed rest, single primary
- * figure 「あと◯◯」, one-tap link to the record tab.
+ * Home daily summary — 栄養バランスの花 (UI redesign 2026-07-22):
+ * a bloom hero (6 nutrient groups) with the day's overall fulfilment in the
+ * centre, a week garden (habit, no wilt), achievements first, then top
+ * shortfalls as thin bars with a fact-only "next bite" nudge. One primary
+ * figure; exact numbers stay compact (progressive disclosure).
  */
 
 const TOP_SHORTFALLS = 2;
 
 export function DailySummaryScreen() {
   const [data, setData] = useState<DailyAnalysisResponse | null>(null);
+  const [garden, setGarden] = useState<readonly GardenDay[]>([]);
+  const [candidates, setCandidates] = useState<FoodCandidatesResponse | null>(null);
   const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
+    const today = todayIsoDate();
     try {
-      const response = await fetch(`/api/analysis?date=${todayIsoDate()}`);
+      const response = await fetch(`/api/analysis?date=${today}`);
       if (!response.ok) {
         setFailed(true);
         return;
@@ -33,6 +45,23 @@ export function DailySummaryScreen() {
       setFailed(false);
     } catch {
       setFailed(true);
+      return;
+    }
+    // Supplementary — the summary still renders if these fail.
+    try {
+      const [weeklyRes, candidatesRes] = await Promise.all([
+        fetch(`/api/analysis?period=weekly&date=${today}`),
+        fetch(`/api/analysis/candidates?date=${today}`),
+      ]);
+      if (weeklyRes.ok) {
+        const weekly = (await weeklyRes.json()) as WeeklyAnalysisResponse;
+        setGarden(buildWeekGarden(weekly, today));
+      }
+      if (candidatesRes.ok) {
+        setCandidates((await candidatesRes.json()) as FoodCandidatesResponse);
+      }
+    } catch {
+      // keep the core summary
     }
   }, []);
 
@@ -63,8 +92,10 @@ export function DailySummaryScreen() {
   }
 
   const { summary } = data;
+  const comparable = [...summary.achieved, ...summary.insufficient];
+  const bloom = buildBloomModel(comparable);
   const topShortfalls = summary.insufficient.slice(0, TOP_SHORTFALLS);
-  const restShortfalls = summary.insufficient.slice(TOP_SHORTFALLS);
+  const restCount = Math.max(summary.insufficient.length - TOP_SHORTFALLS, 0);
 
   return (
     <div>
@@ -72,21 +103,39 @@ export function DailySummaryScreen() {
         <p style={{ color: "var(--color-subtext)", fontSize: "13px", margin: 0 }}>
           {formatJapaneseDate(data.date)} · 食事摂取基準(2025)との比較
         </p>
-        <h1 style={{ fontSize: "20px", margin: "4px 0 0" }}>今日の栄養</h1>
-        {data.profile && (
-          <p style={{ color: "var(--color-subtext)", fontSize: "12px", margin: "4px 0 0" }}>
-            区分: {AGE_BAND_LABELS[data.profile.ageBand]}{" "}
-            {SEX_LABELS[data.profile.sex]}
-          </p>
-        )}
+        <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginTop: "2px" }}>
+          <h1 style={{ fontSize: "20px", margin: 0 }}>今日の栄養</h1>
+          {data.profile && (
+            <span style={{ color: "var(--color-subtext)", fontSize: "12px" }}>
+              {AGE_BAND_LABELS[data.profile.ageBand]} {SEX_LABELS[data.profile.sex]}
+            </span>
+          )}
+        </div>
       </header>
+
+      <section style={{ display: "flex", justifyContent: "center", marginTop: "8px" }}>
+        <BloomFlower petals={bloom.petals} overall={bloom.overall} />
+      </section>
+      <p style={{ textAlign: "center", color: "var(--color-subtext)", fontSize: "12px", margin: "0 0 4px" }}>
+        長い花びらほど基準に近い推定 ·{" "}
+        <span style={{ color: "#c79a12" }}>ゴールド＝目標到達</span>
+      </p>
+
+      {garden.length > 0 && (
+        <section style={{ marginTop: "16px" }}>
+          <h2 style={styles.sectionTitle}>今週の庭</h2>
+          <WeekGarden days={garden} />
+          <p style={{ color: "var(--color-subtext)", fontSize: "11px", margin: "8px 0 0" }}>
+            記録した日はつぼみが開きます。空いた日は明日のつぼみ。
+          </p>
+        </section>
+      )}
 
       <section style={{ marginTop: "20px" }}>
         <h2 style={styles.sectionTitle}>できていること</h2>
         <p style={{ margin: "0 0 8px", fontSize: "14px" }}>
           {summary.comparable_count}項目中{summary.at_least_80_count}項目が80%以上
-          {summary.within_goal_count > 0 &&
-            ` · 目標圏内 ${summary.within_goal_count}項目`}
+          {summary.within_goal_count > 0 && ` · 目標圏内 ${summary.within_goal_count}項目`}
         </p>
         {summary.achieved.length > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -101,105 +150,78 @@ export function DailySummaryScreen() {
       </section>
 
       <section style={{ marginTop: "24px" }}>
-        <h2 style={styles.sectionTitle}>足りていないもの（不足が大きい順）</h2>
+        <h2 style={styles.sectionTitle}>あと少し</h2>
         {summary.insufficient.length === 0 ? (
           <p style={{ color: "var(--color-subtext)", fontSize: "14px" }}>
             比較対象の項目はすべて基準値に達している推定です。
           </p>
         ) : (
           <>
-            {topShortfalls.map((item) => (
-              <RemainingCard
-                key={item.nutrient_code}
-                nutrientName={item.nutrient_name}
-                unit={item.unit}
-                intakeAmount={item.intake_amount}
-                referenceValue={
-                  typeof item.reference_value === "number"
-                    ? item.reference_value
-                    : 0
-                }
-                remainingAmount={item.remaining_amount ?? 0}
-                percent={item.percent_of_reference ?? 0}
-              />
-            ))}
-            {restShortfalls.length > 0 && (
-              <details>
-                <summary
-                  style={{
-                    minHeight: "var(--tap-target-min)",
-                    display: "flex",
-                    alignItems: "center",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    color: "var(--color-subtext)",
-                  }}
-                >
-                  他の不足 {restShortfalls.length}件 —{" "}
-                  {restShortfalls[0].nutrient_name} あと
-                  {formatAmount(restShortfalls[0].remaining_amount ?? 0)}
-                  {restShortfalls[0].unit} ▾
-                </summary>
-                {/* expanded state = compact rows, not repeated big
-                    figures (UI design v0.4 §1: one primary figure per
-                    screen, density stays low) */}
-                <ul style={styles.compactList}>
-                  {restShortfalls.map((item) => (
-                    <li key={item.nutrient_code} style={styles.compactRow}>
-                      <div style={styles.compactHead}>
-                        <span style={{ fontWeight: 500 }}>
-                          {item.nutrient_name}
-                        </span>
-                        <span
-                          style={{
-                            color: "var(--color-subtext)",
-                            fontSize: "12px",
-                          }}
-                        >
-                          {formatAmount(item.intake_amount)} /{" "}
-                          {typeof item.reference_value === "number"
-                            ? formatAmount(item.reference_value)
-                            : "—"}{" "}
-                          {item.unit}
-                        </span>
-                        <span style={{ fontSize: "14px" }}>
-                          あと {formatAmount(item.remaining_amount ?? 0)}
-                          {item.unit}
-                        </span>
-                      </div>
-                      <div style={styles.compactBar}>
-                        <BulletBar
-                          percent={item.percent_of_reference ?? 0}
-                          label={`${item.nutrient_name} ${Math.round(item.percent_of_reference ?? 0)}%`}
-                          height={6}
-                        />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </details>
+            {topShortfalls.map((item) => {
+              const nudge = candidateFor(candidates, item.nutrient_code);
+              return (
+                <div key={item.nutrient_code} style={{ marginBottom: "10px" }}>
+                  <div style={styles.shortfallRow}>
+                    <span style={{ width: "88px", fontSize: "14px" }}>{item.nutrient_name}</span>
+                    <div style={styles.track}>
+                      <div
+                        style={{
+                          ...styles.fill,
+                          width: `${Math.min(item.percent_of_reference ?? 0, 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <span style={styles.remaining}>
+                      あと<b style={{ color: "var(--color-primary-deep)" }}>
+                        {formatAmount(item.remaining_amount ?? 0)}
+                      </b>
+                      {item.unit}
+                    </span>
+                  </div>
+                  {nudge && (
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px" }}>
+                      <span style={styles.nudge}>
+                        {nudge.display_name} {nudge.portion_label ?? `約${Math.round(nudge.portion_g)}g`}
+                        で基準値の約{Math.round(nudge.percent_of_shortfall)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {restCount > 0 && (
+              <p style={{ color: "var(--color-subtext)", fontSize: "13px", margin: "6px 0 0" }}>
+                他の不足 {restCount}件は分析タブで確認できます。
+              </p>
+            )}
+            {candidates?.notice && (
+              <p style={{ color: "var(--color-subtext)", fontSize: "11px", margin: "8px 0 0" }}>
+                {candidates.notice}
+              </p>
             )}
           </>
         )}
       </section>
 
-      <Link
-        href="/meals"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          minHeight: "var(--tap-target-min)",
-          marginTop: "16px",
-          color: "var(--color-primary)",
-          fontWeight: 700,
-          textDecoration: "none",
-        }}
-      >
-        今日の記録を確認する →
+      <Link href="/meals" style={styles.cta}>
+        食事を記録する →
       </Link>
 
       <SourceFooter sources={data.sources} />
     </div>
+  );
+}
+
+function candidateFor(
+  candidates: FoodCandidatesResponse | null,
+  nutrientCode: string,
+) {
+  if (!candidates?.has_analysis) {
+    return null;
+  }
+  return (
+    candidates.candidates.find((c) => c.target_nutrient_code === nutrientCode) ??
+    null
   );
 }
 
@@ -218,25 +240,45 @@ function formatJapaneseDate(isoDate: string): string {
 const styles = {
   sectionTitle: {
     fontSize: "15px",
-    margin: "0 0 8px",
+    margin: "0 0 10px",
   },
-  compactList: {
-    listStyle: "none",
-    margin: "8px 0 0",
-    padding: 0,
-  },
-  compactRow: {
-    padding: "8px 0",
-    borderBottom: "1px solid var(--color-surface)",
-  },
-  compactHead: {
+  shortfallRow: {
     display: "flex",
-    alignItems: "baseline",
-    justifyContent: "space-between",
-    gap: "8px",
+    alignItems: "center",
+    gap: "10px",
+  },
+  track: {
+    flex: 1,
+    height: "6px",
+    background: "var(--color-surface)",
+    borderRadius: "999px",
+    overflow: "hidden",
+  },
+  fill: {
+    height: "100%",
+    background: "var(--color-primary)",
+    borderRadius: "999px",
+  },
+  remaining: {
+    width: "88px",
+    textAlign: "right",
+    fontFamily: "var(--font-numeric)",
     fontSize: "14px",
   },
-  compactBar: {
-    marginTop: "4px",
+  nudge: {
+    background: "var(--color-surface)",
+    color: "var(--color-primary-deep)",
+    borderRadius: "999px",
+    padding: "5px 10px",
+    fontSize: "12px",
+  },
+  cta: {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: "var(--tap-target-min)",
+    marginTop: "20px",
+    color: "var(--color-primary)",
+    fontWeight: 700,
+    textDecoration: "none",
   },
 } satisfies Record<string, React.CSSProperties>;
