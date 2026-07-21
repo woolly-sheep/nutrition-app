@@ -23,8 +23,8 @@ describe("seed validation", () => {
 
   it("loads the expected row counts", () => {
     const seed = loadSeed();
-    expect(seed.foodMaster).toHaveLength(40);
-    expect(seed.nutrientAmount).toHaveLength(640);
+    expect(seed.foodMaster).toHaveLength(2538);
+    expect(seed.nutrientAmount).toHaveLength(40608);
     expect(seed.nutrientReference).toHaveLength(330);
     expect(seed.unitConversion).toHaveLength(6);
   });
@@ -45,7 +45,7 @@ describe("seed validation", () => {
     for (const row of seed.nutrientAmount) {
       counts.set(row.food_id, (counts.get(row.food_id) ?? 0) + 1);
     }
-    expect(counts.size).toBe(40);
+    expect(counts.size).toBe(2538);
     expect([...counts.values()].every((count) => count === 16)).toBe(true);
   });
 });

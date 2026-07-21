@@ -1,21 +1,22 @@
 {
-  "version": "2026-07-07",
+  "version": "2026-07-22",
   "status": "frozen",
-  "source": "02_seed_extraction_workbook_v0_1_20260707.md",
-  "extractedAt": "2026-07-14",
-  "note": "Mechanically extracted from the approved seed extraction workbook. Do not edit values manually.",
+  "source": "MEXT 日本食品標準成分表(八訂)増補2023年 第2章 本表 (seed/source/mext_ch2_honpyo.xlsx)",
+  "sourceUrl": "https://www.mext.go.jp/content/20260327-mxt_kagsei-mext-000029402_02.xlsx",
+  "extractedAt": "2026-07-22",
+  "note": "Full 2,538-food extraction via scripts/build_seed_from_mext.py. Official values copied as-is (number / (x) / Tr=0 / '-'=null); never recalculated. The original 40 curated foods are preserved verbatim. nutrient-amount.json is compact [food_id, nutrient_code, amount, value_status]; loadSeed rehydrates full records. Do not edit values manually.",
   "files": [
     {
       "name": "food-master.json",
-      "sourceSheet": "FoodMasterApproved",
-      "expectedRows": 40,
-      "checksum": "sha256:3dba53b652f7a43a8193cfc6b14a9c5c5ad29355942b4f1a4d2a4fe8a69fa76f"
+      "sourceSheet": "表全体",
+      "expectedRows": 2538,
+      "checksum": "sha256:1582ecd8765b31fbc9198b5cb0a33a7df92f60bdd6cb25a23fce24db8c8c65a4"
     },
     {
       "name": "nutrient-amount.json",
-      "sourceSheet": "NutrientAmountExtraction",
-      "expectedRows": 640,
-      "checksum": "sha256:1c9bb98f646025f263d57f3d7f3d511d7fe526097314d1c3501589091812a979"
+      "sourceSheet": "表全体",
+      "expectedRows": 40608,
+      "checksum": "sha256:af11417d8fa6a003b8cc6eb6f74be9e8df23abb2ef41ee083887388b19519d7c"
     },
     {
       "name": "nutrient-reference.json",

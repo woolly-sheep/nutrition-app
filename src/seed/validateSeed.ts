@@ -11,8 +11,8 @@ export type SeedValidationResult = {
 };
 
 const EXPECTED_ROWS = {
-  foodMaster: 40,
-  nutrientAmount: 640,
+  foodMaster: 2538,
+  nutrientAmount: 40608,
   nutrientReference: 330,
   unitConversion: 6,
 } as const;
@@ -23,6 +23,8 @@ const ALLOWED_VALUE_STATUS = new Set([
   "official_value",
   "parenthesized_official_value",
   "trace",
+  // "-" in the official table: not measured. Kept as null (unknown), never 0.
+  "not_measured",
 ]);
 
 const ALLOWED_REFERENCE_TYPES = new Set([
@@ -90,7 +92,11 @@ function checkAmountRow(row: NutrientAmountRecord): string[] {
   if (typeof row.amount_per_100g === "number" && row.amount_per_100g < 0) {
     errors.push(`nutrientAmount: ${key} has negative amount`);
   }
-  if (typeof row.amount_per_100g !== "number" && row.value_status !== "trace") {
+  // Only "not_measured" ("-") may be non-numeric (null); everything else numeric.
+  if (row.amount_per_100g === null && row.value_status !== "not_measured") {
+    errors.push(`nutrientAmount: ${key} is null but status is ${row.value_status}`);
+  }
+  if (row.amount_per_100g !== null && typeof row.amount_per_100g !== "number") {
     errors.push(`nutrientAmount: ${key} has non-numeric amount for ${row.value_status}`);
   }
   if (!row.unit) errors.push(`nutrientAmount: ${key} is missing unit`);

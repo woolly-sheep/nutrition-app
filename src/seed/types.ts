@@ -70,6 +70,18 @@ export type UnitConversionRecord = {
   reviewer_note: string | null;
 };
 
+/**
+ * On-disk compact nutrient row: [food_id, nutrient_code, amount, value_status].
+ * loadSeed rehydrates these into full NutrientAmountRecord using constant
+ * provenance + the nutrient dictionary. Keeps the bundle small at 2,538 foods.
+ */
+export type CompactNutrientAmount = readonly [
+  food_id: string,
+  nutrient_code: string,
+  amount_per_100g: OfficialValue,
+  value_status: string,
+];
+
 export type Seed = {
   foodMaster: readonly FoodMasterRecord[];
   nutrientAmount: readonly NutrientAmountRecord[];
