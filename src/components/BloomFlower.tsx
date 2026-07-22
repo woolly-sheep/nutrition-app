@@ -31,6 +31,12 @@ export function BloomFlower({ petals, overall }: Props) {
       role="img"
       aria-label={ariaLabel(petals, overall)}
     >
+      <style>{`
+        .bloom-petals { animation: bloomGrow 0.6s ease-out both; transform-origin: center; transform-box: fill-box; }
+        @keyframes bloomGrow { from { transform: scale(0.55); opacity: 0.5; } to { transform: scale(1); opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) { .bloom-petals { animation: none; } }
+      `}</style>
+      <g className="bloom-petals">
       {petals.map((petal, i) => {
         const angle = ANGLES[i] ?? 0;
         const isBud = petal.fulfillment === null;
@@ -72,6 +78,7 @@ export function BloomFlower({ petals, overall }: Props) {
           </g>
         );
       })}
+      </g>
 
       <circle cx={CENTER} cy={CENTER_Y} r={25} fill="var(--color-surface)" />
       <text
