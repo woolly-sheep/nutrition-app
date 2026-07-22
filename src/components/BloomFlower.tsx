@@ -37,24 +37,39 @@ export function BloomFlower({ petals, overall }: Props) {
         const capped = Math.min(petal.fulfillment ?? 0, 1);
         const ry = isBud ? MIN_RY : MIN_RY + capped * MAX_EXTRA;
         const cy = CENTER_Y - (20 + ry);
-        const fill = petal.achieved
-          ? "var(--color-accent)"
-          : isBud
-            ? "transparent"
-            : "var(--color-primary)";
+        // Over the upper limit: deep teal, never gold — flagged calmly with a
+        // ring at the tip (see the 気をつけたい section for the figure).
+        const fill = petal.overLimit
+          ? "var(--color-primary-deep)"
+          : petal.achieved
+            ? "var(--color-accent)"
+            : isBud
+              ? "transparent"
+              : "var(--color-primary)";
+        const tipY = cy - ry;
         return (
-          <ellipse
-            key={petal.key}
-            cx={CENTER}
-            cy={cy}
-            rx={RX}
-            ry={ry}
-            fill={fill}
-            stroke={isBud ? "var(--color-primary)" : "none"}
-            strokeWidth={isBud ? 1.5 : 0}
-            strokeDasharray={isBud ? "3 3" : undefined}
-            transform={`rotate(${angle} ${CENTER} ${CENTER_Y})`}
-          />
+          <g key={petal.key} transform={`rotate(${angle} ${CENTER} ${CENTER_Y})`}>
+            <ellipse
+              cx={CENTER}
+              cy={cy}
+              rx={RX}
+              ry={ry}
+              fill={fill}
+              stroke={isBud ? "var(--color-primary)" : "none"}
+              strokeWidth={isBud ? 1.5 : 0}
+              strokeDasharray={isBud ? "3 3" : undefined}
+            />
+            {petal.overLimit && (
+              <circle
+                cx={CENTER}
+                cy={tipY + 7}
+                r={4}
+                fill="none"
+                stroke="var(--color-base)"
+                strokeWidth={2}
+              />
+            )}
+          </g>
         );
       })}
 
@@ -104,7 +119,7 @@ function ariaLabel(
   const parts = petals.map((p) =>
     p.fulfillment === null
       ? `${p.label}は記録待ち`
-      : `${p.label} ${Math.round(p.fulfillment * 100)}%`,
+      : `${p.label} ${Math.round(p.fulfillment * 100)}%${p.overLimit ? "（上限超えの推定）" : ""}`,
   );
   const head =
     overall === null

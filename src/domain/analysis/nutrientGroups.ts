@@ -46,6 +46,8 @@ export type PetalValue = {
   fulfillment: number | null;
   /** True when the group's mean reaches the reference (gold petal). */
   achieved: boolean;
+  /** True when a member exceeded its tolerable upper limit (never gold). */
+  overLimit: boolean;
 };
 
 export type BloomModel = {
@@ -61,6 +63,7 @@ export type BloomModel = {
  */
 export function buildBloomModel(
   comparable: readonly AnalysisNutrientItem[],
+  overLimitCodes: ReadonlySet<string> = new Set(),
 ): BloomModel {
   const percentByCode = new Map<string, number>();
   for (const item of comparable) {
@@ -70,18 +73,27 @@ export function buildBloomModel(
   }
 
   const petals = NUTRIENT_GROUPS.map((group) => {
+    const overLimit = group.codes.some((code) => overLimitCodes.has(code));
     const values = group.codes
       .map((code) => percentByCode.get(code))
       .filter((v): v is number => typeof v === "number");
     if (values.length === 0) {
-      return { key: group.key, label: group.label, fulfillment: null, achieved: false };
+      return {
+        key: group.key,
+        label: group.label,
+        fulfillment: null,
+        achieved: false,
+        overLimit,
+      };
     }
     const mean = values.reduce((sum, v) => sum + v, 0) / values.length / 100;
     return {
       key: group.key,
       label: group.label,
       fulfillment: mean,
-      achieved: mean >= 1,
+      // Over the upper limit is never celebrated as achieved (gold).
+      achieved: mean >= 1 && !overLimit,
+      overLimit,
     };
   });
 

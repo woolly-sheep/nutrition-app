@@ -93,9 +93,14 @@ export function DailySummaryScreen() {
 
   const { summary } = data;
   const comparable = [...summary.achieved, ...summary.insufficient];
-  const bloom = buildBloomModel(comparable);
+  const overLimitCodes = new Set(summary.ul_reached.map((i) => i.nutrient_code));
+  const bloom = buildBloomModel(comparable, overLimitCodes);
   const topShortfalls = summary.insufficient.slice(0, TOP_SHORTFALLS);
   const restCount = Math.max(summary.insufficient.length - TOP_SHORTFALLS, 0);
+  const watchItems = [
+    ...summary.ul_reached.map((item) => ({ item, kind: "ul" as const })),
+    ...summary.dg_over.map((item) => ({ item, kind: "dg" as const })),
+  ];
 
   return (
     <div>
@@ -203,6 +208,28 @@ export function DailySummaryScreen() {
         )}
       </section>
 
+      {watchItems.length > 0 && (
+        <section style={styles.watchSection}>
+          <h2 style={styles.sectionTitle}>気をつけたい</h2>
+          {watchItems.map(({ item, kind }) => {
+            const isEnergyRatio = item.unit === "%E";
+            return (
+              <div key={`${kind}-${item.nutrient_code}`} style={styles.watchRow}>
+                <span style={{ fontSize: "14px" }}>{item.nutrient_name}</span>
+                <span style={{ fontSize: "13px", color: "var(--color-subtext)" }}>
+                  {kind === "ul" ? "上限" : isEnergyRatio ? "目標範囲" : "目標"}より +
+                  {formatAmount(item.over_amount)}
+                  {isEnergyRatio ? "pt" : item.unit}（推定）
+                </span>
+              </div>
+            );
+          })}
+          <Link href={`/analysis`} style={styles.watchLink}>
+            分析タブで内訳を見る →
+          </Link>
+        </section>
+      )}
+
       <Link href="/meals" style={styles.cta}>
         食事を記録する →
       </Link>
@@ -271,6 +298,27 @@ const styles = {
     borderRadius: "999px",
     padding: "5px 10px",
     fontSize: "12px",
+  },
+  watchSection: {
+    marginTop: "24px",
+    padding: "14px 16px",
+    background: "var(--color-surface)",
+    borderRadius: "12px",
+  },
+  watchRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    gap: "8px",
+    padding: "5px 0",
+  },
+  watchLink: {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: "var(--tap-target-min)",
+    color: "var(--color-primary-deep)",
+    fontSize: "13px",
+    textDecoration: "none",
   },
   cta: {
     display: "inline-flex",

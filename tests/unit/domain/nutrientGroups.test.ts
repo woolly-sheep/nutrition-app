@@ -57,4 +57,15 @@ describe("buildBloomModel", () => {
     ]);
     expect(model.overall).toBeCloseTo(0.75);
   });
+
+  it("flags a group over its upper limit and never marks it achieved", () => {
+    const model = buildBloomModel(
+      [item("iron_mg", 180), item("calcium_mg", 130)],
+      new Set(["iron_mg"]),
+    );
+    const mineralA = model.petals.find((p) => p.key === "mineralA");
+    expect(mineralA?.overLimit).toBe(true);
+    // mean is >100% but an over-limit group is never gold
+    expect(mineralA?.achieved).toBe(false);
+  });
 });
