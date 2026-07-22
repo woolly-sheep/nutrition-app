@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   FoodCandidatesResponse,
 } from "../../server/api/handlers/getFoodCandidates";
@@ -82,6 +82,38 @@ export function MealEntryScreen() {
   useEffect(() => {
     void loadShortcuts();
   }, [loadShortcuts]);
+
+  // One-tap add from the home "あと少し" nudge (/meals?add=<food_id>).
+  // Prefills a draft from the server-validated candidate — never auto-saves.
+  const addParamHandled = useRef(false);
+  useEffect(() => {
+    if (addParamHandled.current || !candidates?.has_analysis) {
+      return;
+    }
+    const requested = new URLSearchParams(window.location.search).get("add");
+    if (!requested) {
+      return;
+    }
+    const candidate = candidates.candidates.find((c) => c.food_id === requested);
+    if (!candidate) {
+      return;
+    }
+    addParamHandled.current = true;
+    setDraftItems((prev) =>
+      prev.some((item) => item.foodId === candidate.food_id)
+        ? prev
+        : [
+            ...prev,
+            {
+              foodId: candidate.food_id,
+              displayName: candidate.display_name,
+              intakeG: candidate.portion_g,
+              estimatedKcal: candidate.estimated_kcal,
+            },
+          ],
+    );
+    setSaveState("idle");
+  }, [candidates]);
 
   const shiftDate = (days: number) => {
     const next = isoDatePlusDays(date, days);

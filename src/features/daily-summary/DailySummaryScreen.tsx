@@ -185,10 +185,15 @@ export function DailySummaryScreen() {
                   </div>
                   {nudge && (
                     <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px" }}>
-                      <span style={styles.nudge}>
-                        {nudge.display_name} {nudge.portion_label ?? `約${Math.round(nudge.portion_g)}g`}
+                      <Link
+                        href={`/meals?add=${encodeURIComponent(nudge.food_id)}`}
+                        style={styles.nudge}
+                        aria-label={`${nudge.display_name}を記録に追加`}
+                      >
+                        ＋ {nudge.display_name}{" "}
+                        {nudge.portion_label ?? `約${Math.round(nudge.portion_g)}g`}
                         で基準値の約{Math.round(nudge.percent_of_shortfall)}%
-                      </span>
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -293,11 +298,15 @@ const styles = {
     fontSize: "14px",
   },
   nudge: {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: "var(--tap-target-min)",
     background: "var(--color-surface)",
     color: "var(--color-primary-deep)",
     borderRadius: "999px",
-    padding: "5px 10px",
+    padding: "6px 12px",
     fontSize: "12px",
+    textDecoration: "none",
   },
   watchSection: {
     marginTop: "24px",
