@@ -33,19 +33,36 @@ paths:
   /api/foods:
     get:
       tags: [foods]
-      summary: FoodMaster 検索（公開カタログ・MVP 40食品）
+      summary: FoodMaster 検索（公開カタログ・八訂 全2,538食品）
       parameters:
         - name: q
           in: query
           required: false
           schema: { type: string }
-          description: 部分一致（display_name / official_food_name）。空なら全件。
+          description: 部分一致（display_name / official_food_name）。空なら先頭ページ。上限あり。
       responses:
         "200":
           description: 検索結果。0件も正常系（message 付き）。
           content:
             application/json:
               schema: { $ref: "#/components/schemas/FoodSearchResponse" }
+
+  /api/foods/rich:
+    get:
+      tags: [foods]
+      summary: 栄養素から探す（100gあたり含有量が多い順・事実表示）
+      parameters:
+        - name: nutrient
+          in: query
+          required: true
+          schema: { type: string }
+          description: 対象の栄養素コード（選択可能な栄養素のみ）。
+      responses:
+        "200":
+          description: 含有量の多い順の食品（上限あり）。推奨ではない旨の notice 付き。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RichFoodsResponse" }
 
   /api/meals:
     get:
@@ -375,6 +392,27 @@ components:
         message:
           type: string
           description: 0件時のみ。エラーではなく正常な検索結果。
+
+    RichFoodItem:
+      type: object
+      required: [food_id, display_name, amount_per_100g, unit]
+      properties:
+        food_id: { type: string }
+        display_name: { type: string }
+        amount_per_100g: { type: number }
+        unit: { type: string }
+
+    RichFoodsResponse:
+      type: object
+      required: [nutrient_code, foods, notice]
+      properties:
+        nutrient_code: { type: string }
+        foods:
+          type: array
+          items: { $ref: "#/components/schemas/RichFoodItem" }
+        notice:
+          type: string
+          description: 事実表示であり摂取の推奨ではない旨。
 
     UsualFoodsResponse:
       type: object

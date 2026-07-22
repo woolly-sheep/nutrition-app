@@ -10,6 +10,7 @@ import type {
 import type { DayMeal } from "../../server/api/handlers/listDayMeals";
 import type { MealType } from "../../server/api/schemas/meals";
 import { FoodSearchBox, type DraftItem } from "../food-search/FoodSearchBox";
+import { NutrientFinder } from "../food-search/NutrientFinder";
 
 /**
  * 記録 tab (UI design v0.1 §4.2 + v0.3 addendum). Search + grams input +
@@ -293,6 +294,13 @@ export function MealEntryScreen() {
       </header>
 
       <FoodSearchBox onAdd={handleAdd} />
+
+      <details style={{ marginTop: "12px" }}>
+        <summary style={styles.finderSummary}>栄養素から探す</summary>
+        <div style={{ marginTop: "8px" }}>
+          <NutrientFinder onAdd={handleAdd} />
+        </div>
+      </details>
 
       {usual !== null && usual.items.length > 0 && (
         <section style={{ marginTop: "24px" }}>
@@ -709,6 +717,15 @@ const styles = {
     cursor: "pointer",
   },
   sectionTitle: { fontSize: "15px", margin: "0 0 8px" },
+  finderSummary: {
+    minHeight: "var(--tap-target-min)",
+    display: "flex",
+    alignItems: "center",
+    cursor: "pointer",
+    fontSize: "14px",
+    color: "var(--color-primary)",
+    fontWeight: 700,
+  },
   sectionHint: {
     fontSize: "12px",
     fontWeight: 400,
