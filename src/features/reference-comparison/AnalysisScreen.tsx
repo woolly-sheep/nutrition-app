@@ -13,6 +13,7 @@ import type {
   DailyAnalysisResponse,
 } from "../../server/api/schemas/analysis";
 import { AGE_BAND_LABELS, SEX_LABELS } from "../daily-summary/ProfileSetup";
+import { MonthGarden } from "../../components/MonthGarden";
 import { WeeklyReport } from "./WeeklyReport";
 
 /**
@@ -136,6 +137,8 @@ export function AnalysisScreen() {
       </Link>
 
       <WeeklyReport date={data.date} />
+
+      <MonthGarden date={data.date} />
 
       <SourceFooter sources={data.sources} />
     </div>

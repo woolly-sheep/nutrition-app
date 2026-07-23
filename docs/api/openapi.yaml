@@ -271,6 +271,25 @@ paths:
               schema: { $ref: "#/components/schemas/FoodCandidatesResponse" }
         "422": { $ref: "#/components/responses/ValidationProblem" }
 
+  /api/analysis/garden:
+    get:
+      tags: [analysis]
+      summary: 月間の庭（直近5週間・1日1輪の充足率）
+      description: |
+        各日の充足率は当日の comparable(RDA/AI)充足率の平均。記録なしの日は
+        null（つぼみ）で、0 埋めしない。区分未設定は days 空・profile_required。
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: 直近日数分の日次充足率。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GardenResponse" }
+
 components:
   responses:
     ValidationProblem:
@@ -413,6 +432,29 @@ components:
         notice:
           type: string
           description: 事実表示であり摂取の推奨ではない旨。
+
+    GardenDayCell:
+      type: object
+      required: [date, fulfillment]
+      properties:
+        date: { type: string, format: date }
+        fulfillment:
+          type: [number, "null"]
+          description: 当日の平均充足率(0..1+)。記録なしは null（0埋めしない）。
+
+    GardenResponse:
+      type: object
+      required: [date, profile_required, days, disclaimer, sources]
+      properties:
+        date: { type: string, format: date }
+        profile_required: { type: boolean }
+        days:
+          type: array
+          items: { $ref: "#/components/schemas/GardenDayCell" }
+        disclaimer: { type: string }
+        sources:
+          type: array
+          items: { type: string }
 
     UsualFoodsResponse:
       type: object
