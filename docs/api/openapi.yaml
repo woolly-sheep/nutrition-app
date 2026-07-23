@@ -290,6 +290,39 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/GardenResponse" }
 
+  /api/backup:
+    get:
+      tags: [backup]
+      summary: データのエクスポート（記録＋区分設定）
+      responses:
+        "200":
+          description: バックアップJSON。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BackupFile" }
+    post:
+      tags: [backup]
+      summary: データの復元（現在の記録を全置換・要確認）
+      description: |
+        payload 全体を検証してから書き込む。1件でも不正なら 422 を返し、
+        何も変更しない。seed には触れない。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BackupFile" }
+      responses:
+        "200":
+          description: 復元件数。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [restored]
+                properties:
+                  restored: { type: integer }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+
 components:
   responses:
     ValidationProblem:
@@ -455,6 +488,27 @@ components:
         sources:
           type: array
           items: { type: string }
+
+    BackupFile:
+      type: object
+      required: [version, exported_at, profile, meals]
+      properties:
+        version: { type: integer }
+        exported_at: { type: string, format: date-time }
+        profile:
+          oneOf:
+            - { $ref: "#/components/schemas/StoredProfile" }
+            - { type: "null" }
+        meals:
+          type: array
+          items: { $ref: "#/components/schemas/MealRecord" }
+
+    StoredProfile:
+      type: object
+      required: [sex, ageBand]
+      properties:
+        sex: { type: string, enum: [male, female] }
+        ageBand: { type: string }
 
     UsualFoodsResponse:
       type: object
