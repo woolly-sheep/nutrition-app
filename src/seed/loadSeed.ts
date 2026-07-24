@@ -38,6 +38,14 @@ const NUTRIENT_META: Record<string, { name: string; unit: string }> = {
   vitamin_c_mg: { name: "ビタミンC", unit: "mg" },
   vitamin_d_ug: { name: "ビタミンD", unit: "ug" },
   folate_ug: { name: "葉酸", unit: "ug" },
+  magnesium_mg: { name: "マグネシウム", unit: "mg" },
+  copper_mg: { name: "銅", unit: "mg" },
+  // α-tocopherol only, matching the DRI basis (報告書 p.183 脚注1).
+  vitamin_e_mg: { name: "ビタミンE", unit: "mg" },
+  // Niacin equivalents, matching the DRI unit mgNE/日 (報告書 p.236 脚注1).
+  niacin_mgne: { name: "ナイアシン", unit: "mgNE" },
+  vitamin_b6_mg: { name: "ビタミンB6", unit: "mg" },
+  vitamin_b12_ug: { name: "ビタミンB12", unit: "ug" },
 };
 
 // Uniform provenance for every extracted nutrient row (see seed-manifest.json).

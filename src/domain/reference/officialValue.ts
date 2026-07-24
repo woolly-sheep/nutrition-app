@@ -11,6 +11,7 @@ import type { OfficialValue } from "../../seed/types";
  *   "17以上"       at-least threshold
  *   "6.5未満"      less-than threshold
  *   "6.0 no_menses / 10.0 menses"  condition-dependent pair
+ *   "350 nicotinamide / 85 nicotinic_acid"  condition-dependent pair
  *   "not_established"
  */
 export type ParsedOfficialValue =
@@ -25,7 +26,14 @@ export type ParsedOfficialValue =
 const RANGE_PATTERN = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)$/;
 const AT_LEAST_PATTERN = /^(\d+(?:\.\d+)?)以上$/;
 const LESS_THAN_PATTERN = /^(\d+(?:\.\d+)?)未満$/;
-const CONDITIONAL_PATTERN = /no_menses|menses/;
+/**
+ * "<number> <condition> / <number> <condition>" — one official cell holding
+ * two values on different bases (iron 月経の有無, niacin ニコチンアミド/ニコチン酸).
+ * Collapsing either side would compare intake against a value that is not
+ * the user's, so these stay unparsed and unjudged.
+ */
+const CONDITIONAL_PATTERN =
+  /^\d+(?:\.\d+)?\s+\w+\s*\/\s*\d+(?:\.\d+)?\s+\w+$/;
 
 export function parseOfficialValue(value: OfficialValue): ParsedOfficialValue {
   if (typeof value === "number" && Number.isFinite(value)) {

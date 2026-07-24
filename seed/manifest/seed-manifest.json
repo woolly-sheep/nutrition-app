@@ -1,10 +1,10 @@
 {
-  "version": "2026-07-22",
+  "version": "2026-07-24",
   "status": "frozen",
-  "source": "MEXT 日本食品標準成分表(八訂)増補2023年 第2章 本表 (seed/source/mext_ch2_honpyo.xlsx)",
+  "source": "MEXT 日本食品標準成分表(八訂)増補2023年 第2章 本表 (seed/source/mext_ch2_honpyo.xlsx) / MHLW 日本人の食事摂取基準(2025年版)策定検討会報告書 分割版PDF (seed/source/mhlw_dri2025/)",
   "sourceUrl": "https://www.mext.go.jp/content/20260327-mxt_kagsei-mext-000029402_02.xlsx",
-  "extractedAt": "2026-07-22",
-  "note": "Full 2,538-food extraction via scripts/build_seed_from_mext.py. Official values copied as-is (number / (x) / Tr=0 / '-'=null); never recalculated. The original 40 curated foods are preserved verbatim. nutrient-amount.json is compact [food_id, nutrient_code, amount, value_status]; loadSeed rehydrates full records. Do not edit values manually.",
+  "extractedAt": "2026-07-24",
+  "note": "Full 2,538-food extraction via scripts/build_seed_from_mext.py, extended to 22 nutrients by scripts/add_nutrients_from_mext.py (magnesium/copper/vitamin E/niacin NE/B6/B12 from the same official MEXT table). Reference rows extended by scripts/add_mhlw_references_2025.py, transcribed from the official MHLW DRI 2025 tables (errata 2025-03-25 reflected). Official values copied as-is (number / (x) / Tr=0 / '-'=null); never recalculated. The original 40 curated foods are preserved verbatim. nutrient-amount.json is compact [food_id, nutrient_code, amount, value_status]; loadSeed rehydrates full records. Do not edit values manually.",
   "files": [
     {
       "name": "food-master.json",
@@ -15,14 +15,14 @@
     {
       "name": "nutrient-amount.json",
       "sourceSheet": "表全体",
-      "expectedRows": 40608,
-      "checksum": "sha256:af11417d8fa6a003b8cc6eb6f74be9e8df23abb2ef41ee083887388b19519d7c"
+      "expectedRows": 55836,
+      "checksum": "sha256:94aa9cbc61fbdb4085b158207b562ed01a9804b3b77e1048e727330060b2013c"
     },
     {
       "name": "nutrient-reference.json",
-      "sourceSheet": "NutrientReferenceExtraction",
-      "expectedRows": 330,
-      "checksum": "sha256:39205638b7ae5ff1bd6a1224ddd7eb6fbed91b1c1555fe2fe0da583f81a60589"
+      "sourceSheet": "NutrientReferenceExtraction + MHLW DRI 2025 PDF tables",
+      "expectedRows": 480,
+      "checksum": "sha256:7efa48f7dad93d635970ecf69c484d7e6c63f557cdfd61bdcbf1879c4485ae95"
     },
     {
       "name": "unit-conversion.json",
