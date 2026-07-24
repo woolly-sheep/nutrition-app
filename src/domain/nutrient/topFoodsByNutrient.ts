@@ -28,6 +28,12 @@ export const SELECTABLE_NUTRIENTS: { code: string; label: string }[] = [
   { code: "vitamin_c_mg", label: "ビタミンC" },
   { code: "vitamin_d_ug", label: "ビタミンD" },
   { code: "folate_ug", label: "葉酸" },
+  { code: "magnesium_mg", label: "マグネシウム" },
+  { code: "copper_mg", label: "銅" },
+  { code: "vitamin_e_mg", label: "ビタミンE" },
+  { code: "niacin_mgne", label: "ナイアシン" },
+  { code: "vitamin_b6_mg", label: "ビタミンB6" },
+  { code: "vitamin_b12_ug", label: "ビタミンB12" },
 ];
 
 const SELECTABLE_CODES = new Set(SELECTABLE_NUTRIENTS.map((n) => n.code));

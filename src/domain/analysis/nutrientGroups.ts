@@ -29,14 +29,30 @@ export const NUTRIENT_GROUPS: {
 }[] = [
   { key: "protein", label: "たんぱく", codes: ["protein_g"] },
   { key: "fiber", label: "繊維", codes: ["dietary_fiber_g"] },
-  { key: "vitaminFat", label: "ビタA・D", codes: ["vitamin_a_ug", "vitamin_d_ug"] },
+  {
+    key: "vitaminFat",
+    label: "ビタA・D・E",
+    codes: ["vitamin_a_ug", "vitamin_d_ug", "vitamin_e_mg"],
+  },
   {
     key: "vitaminWater",
     label: "ビタB・C",
-    codes: ["vitamin_b1_mg", "vitamin_b2_mg", "vitamin_c_mg", "folate_ug"],
+    codes: [
+      "vitamin_b1_mg",
+      "vitamin_b2_mg",
+      "vitamin_b6_mg",
+      "vitamin_b12_ug",
+      "niacin_mgne",
+      "vitamin_c_mg",
+      "folate_ug",
+    ],
   },
-  { key: "mineralA", label: "カル・鉄", codes: ["calcium_mg", "iron_mg"] },
-  { key: "mineralB", label: "カリ・亜鉛", codes: ["potassium_mg", "zinc_mg"] },
+  { key: "mineralA", label: "カル・鉄・Mg", codes: ["calcium_mg", "iron_mg", "magnesium_mg"] },
+  {
+    key: "mineralB",
+    label: "カリ・亜鉛・銅",
+    codes: ["potassium_mg", "zinc_mg", "copper_mg"],
+  },
 ];
 
 export type PetalValue = {

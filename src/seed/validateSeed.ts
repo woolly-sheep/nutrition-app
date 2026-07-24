@@ -12,12 +12,12 @@ export type SeedValidationResult = {
 
 const EXPECTED_ROWS = {
   foodMaster: 2538,
-  nutrientAmount: 40608,
-  nutrientReference: 330,
+  nutrientAmount: 55836,
+  nutrientReference: 480,
   unitConversion: 6,
 } as const;
 
-const NUTRIENTS_PER_FOOD = 16;
+const NUTRIENTS_PER_FOOD = 22;
 
 const ALLOWED_VALUE_STATUS = new Set([
   "official_value",

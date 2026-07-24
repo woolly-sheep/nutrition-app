@@ -54,6 +54,8 @@ export type NutrientReferenceRecord = {
   source_checked_at: string;
   correction_reflected: OfficialValue;
   review_status: string;
+  /** Official footnote kept verbatim when it changes how the value reads. */
+  reviewer_note?: string | null;
 };
 
 export type UnitConversionRecord = {
