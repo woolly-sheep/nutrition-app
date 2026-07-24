@@ -36,6 +36,19 @@ export function BloomFlower({ petals, overall }: Props) {
         @keyframes bloomGrow { from { transform: scale(0.55); opacity: 0.5; } to { transform: scale(1); opacity: 1; } }
         @media (prefers-reduced-motion: reduce) { .bloom-petals { animation: none; } }
       `}</style>
+      <defs>
+        {/* Teal hatch = supplement-derived share (decision-20260724-supplement-intake). */}
+        <pattern
+          id="bloom-supplement-hatch"
+          width="5"
+          height="5"
+          patternTransform="rotate(45)"
+          patternUnits="userSpaceOnUse"
+        >
+          <rect width="5" height="5" fill="var(--color-primary)" opacity="0.18" />
+          <line x1="0" y1="0" x2="0" y2="5" stroke="var(--color-primary)" strokeWidth="2" />
+        </pattern>
+      </defs>
       <g className="bloom-petals">
       {petals.map((petal, i) => {
         const angle = ANGLES[i] ?? 0;
@@ -52,19 +65,35 @@ export function BloomFlower({ petals, overall }: Props) {
             : isBud
               ? "transparent"
               : "var(--color-primary)";
+        // Food-only length: a shorter ellipse sharing the same inner edge
+        // (base is fixed at CENTER_Y-20). Drawn on top of the full-length
+        // petal, so the tip beyond it stays hatched = the supplement share.
+        const foodCapped = Math.min(petal.foodFulfillment ?? capped, capped);
+        const ryFood = isBud ? MIN_RY : MIN_RY + foodCapped * MAX_EXTRA;
+        const cyFood = CENTER_Y - (20 + ryFood);
+        const hasSupplement = !isBud && ryFood < ry - 0.5;
         const tipY = cy - ry;
         return (
           <g key={petal.key} transform={`rotate(${angle} ${CENTER} ${CENTER_Y})`}>
+            {/* Full petal: solid when no supplement, else hatched tip layer. */}
             <ellipse
               cx={CENTER}
               cy={cy}
               rx={RX}
               ry={ry}
-              fill={fill}
+              fill={
+                hasSupplement && !petal.achieved && !petal.overLimit
+                  ? "url(#bloom-supplement-hatch)"
+                  : fill
+              }
               stroke={isBud ? "var(--color-primary)" : "none"}
               strokeWidth={isBud ? 1.5 : 0}
               strokeDasharray={isBud ? "3 3" : undefined}
             />
+            {/* Food share drawn solid on top, covering the base up to ryFood. */}
+            {hasSupplement && (
+              <ellipse cx={CENTER} cy={cyFood} rx={RX} ry={ryFood} fill={fill} />
+            )}
             {petal.overLimit && (
               <circle
                 cx={CENTER}

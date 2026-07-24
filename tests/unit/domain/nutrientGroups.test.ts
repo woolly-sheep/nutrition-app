@@ -14,6 +14,8 @@ function item(
     status: "below_reference",
     label: "",
     intake_amount: 0,
+    food_amount: 0,
+    supplement_amount: 0,
     reference_value: 100,
     percent_of_reference: percent,
   };

@@ -6,11 +6,13 @@ import { BulletBar } from "../../components/BulletBar";
 import { RangeBar } from "../../components/RangeBar";
 import { formatAmount } from "../../components/RemainingCard";
 import { SourceFooter } from "../../components/SourceFooter";
+import { SplitBar } from "../../components/SplitBar";
 import { ThresholdBar } from "../../components/ThresholdBar";
 import type {
   AnalysisExceedanceItem,
   AnalysisNutrientItem,
   DailyAnalysisResponse,
+  NonFoodLimitItem,
 } from "../../server/api/schemas/analysis";
 import { ProfilePanel } from "../daily-summary/ProfilePanel";
 import { AGE_BAND_LABELS, SEX_LABELS } from "../daily-summary/ProfileSetup";
@@ -130,10 +132,25 @@ export function AnalysisScreen() {
 
       <section style={{ marginTop: "24px" }}>
         <h2 style={styles.sectionTitle}>基準値比較（推奨量・目安量）</h2>
+        {data.has_supplements && <SplitLegend />}
         {bars.map((item) => (
           <NutrientBarRow key={item.nutrient_code} item={item} />
         ))}
       </section>
+
+      {summary.non_food_limits.length > 0 && (
+        <section style={styles.nonFoodSection}>
+          <h2 style={styles.sectionTitle}>
+            サプリからの摂取（通常の食品以外の上限量）
+          </h2>
+          {summary.non_food_limits.map((item) => (
+            <NonFoodLimitRow key={item.nutrient_code} item={item} />
+          ))}
+          {summary.non_food_limits[0]?.note && (
+            <p style={styles.noteCallout}>{summary.non_food_limits[0].note}</p>
+          )}
+        </section>
+      )}
 
       {summary.dg_over.length > 0 && (
         <section style={{ marginTop: "24px" }}>
@@ -176,6 +193,8 @@ export function AnalysisScreen() {
 
 function NutrientBarRow({ item }: { item: AnalysisNutrientItem }) {
   const percent = item.percent_of_reference ?? 0;
+  const hasSupplement = item.supplement_amount > 0;
+  const foodPercent = item.percent_of_reference_food ?? percent;
   return (
     <div style={{ marginBottom: "14px" }}>
       <div style={styles.rowHeader}>
@@ -191,10 +210,25 @@ function NutrientBarRow({ item }: { item: AnalysisNutrientItem }) {
             ` · あと${formatAmount(item.remaining_amount)}${item.unit}`}
         </span>
       </div>
-      <BulletBar
-        percent={percent}
-        label={`${item.nutrient_name} ${Math.round(percent)}%`}
-      />
+      {hasSupplement ? (
+        <>
+          <SplitBar
+            foodPercent={foodPercent}
+            totalPercent={percent}
+            label={`${item.nutrient_name} 合計${Math.round(percent)}%（食品${Math.round(foodPercent)}%・サプリ${Math.round(percent - foodPercent)}%）`}
+          />
+          <p style={styles.splitFigures}>
+            食品 {formatAmount(item.food_amount)}
+            {item.unit} ・ サプリ {formatAmount(item.supplement_amount)}
+            {item.unit}
+          </p>
+        </>
+      ) : (
+        <BulletBar
+          percent={percent}
+          label={`${item.nutrient_name} ${Math.round(percent)}%`}
+        />
+      )}
     </div>
   );
 }
@@ -263,6 +297,42 @@ function ExceedanceRow({
   );
 }
 
+function SplitLegend() {
+  return (
+    <div style={styles.legend}>
+      <span style={styles.legendItem}>
+        <span style={styles.legendSolid} />
+        食品（成分表）
+      </span>
+      <span style={styles.legendItem}>
+        <span style={styles.legendHatch} />
+        サプリ（自己申告）
+      </span>
+    </div>
+  );
+}
+
+function NonFoodLimitRow({ item }: { item: NonFoodLimitItem }) {
+  const percent = item.percent_of_limit;
+  return (
+    <div style={{ marginBottom: "10px" }}>
+      <div style={styles.rowHeader}>
+        <span style={{ fontSize: "14px" }}>{item.nutrient_name}</span>
+        <span style={styles.rowFigures}>
+          サプリ {formatAmount(item.supplement_amount)}
+          {item.unit} / 上限 {formatAmount(item.limit_value)}
+          {item.unit}
+        </span>
+      </div>
+      <ThresholdBar
+        percentOfThreshold={percent}
+        label={`${item.nutrient_name} サプリ分は上限量の ${Math.round(percent)}%`}
+      />
+      <p style={{ margin: "6px 0 0", fontSize: "12px" }}>{item.label}。</p>
+    </div>
+  );
+}
+
 function todayIsoDate(): string {
   const now = new Date();
   const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -292,6 +362,41 @@ const styles = {
     padding: "12px",
     border: "1px solid var(--color-text)",
     borderRadius: "10px",
+  },
+  nonFoodSection: {
+    marginTop: "20px",
+    padding: "12px",
+    border: "1px solid var(--color-text)",
+    borderRadius: "10px",
+  },
+  splitFigures: {
+    margin: "4px 0 0",
+    fontSize: "12px",
+    color: "var(--color-subtext)",
+  },
+  legend: {
+    display: "flex",
+    gap: "16px",
+    marginBottom: "12px",
+    fontSize: "12px",
+    color: "var(--color-subtext)",
+  },
+  legendItem: { display: "flex", alignItems: "center", gap: "6px" },
+  legendSolid: {
+    width: "16px",
+    height: "10px",
+    borderRadius: "2px",
+    background: "var(--color-primary)",
+    display: "inline-block",
+  },
+  legendHatch: {
+    width: "16px",
+    height: "10px",
+    borderRadius: "2px",
+    display: "inline-block",
+    backgroundColor: "rgba(47,140,126,0.18)",
+    backgroundImage:
+      "repeating-linear-gradient(135deg, var(--color-primary) 0 2px, transparent 2px 5px)",
   },
   rowHeader: {
     display: "flex",
