@@ -16,11 +16,38 @@ export type AnalysisNutrientItem = {
   label: string;
   /** Required accompanying note when the wording policy demands one. */
   note?: string;
+  /** Combined food + supplement intake (what the judgment is based on). */
   intake_amount: number;
+  /** Food-derived share of intake_amount (official composition). */
+  food_amount: number;
+  /** Supplement-derived share of intake_amount (self-reported); 0 when none. */
+  supplement_amount: number;
   /** Official value exactly as stored in the frozen seed. */
   reference_value: number | string | null;
+  /** Combined intake ÷ reference × 100. */
   percent_of_reference?: number;
+  /** Food-only intake ÷ reference × 100 — the solid part of a split bar. */
+  percent_of_reference_food?: number;
   remaining_amount?: number;
+};
+
+/**
+ * Supplement-only intake compared against a non-food tolerable upper limit
+ * (magnesium etc.). Separate from ul_reached: the limit applies to the
+ * supplement share alone, not the combined intake
+ * (decision-20260724-supplement-intake).
+ */
+export type NonFoodLimitItem = {
+  nutrient_code: string;
+  nutrient_name: string;
+  unit: string;
+  supplement_amount: number;
+  limit_value: number;
+  percent_of_limit: number;
+  exceeded: boolean;
+  /** SafeWordingService label. */
+  label: string;
+  note: string;
 };
 
 /** UL/DG threshold exceedance (UI design v0.2 addendum §1/§3). */
@@ -53,7 +80,11 @@ export type DailyAnalysisResponse = {
     ul_reached: readonly AnalysisExceedanceItem[];
     /** 6b section — empty on days with no DG overage. */
     dg_over: readonly AnalysisExceedanceItem[];
+    /** Supplement-only non-food UL checks — empty unless a supplement hits one. */
+    non_food_limits: readonly NonFoodLimitItem[];
   } | null;
+  /** True when any nutrient this day has a supplement-derived share. */
+  has_supplements: boolean;
   /** Calculation warning codes only — never meal contents. */
   warning_codes: readonly string[];
   disclaimer: string;

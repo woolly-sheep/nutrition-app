@@ -21,7 +21,7 @@ import type {
  * so rehydration reproduces the extracted records exactly.
  */
 
-const NUTRIENT_META: Record<string, { name: string; unit: string }> = {
+export const NUTRIENT_META: Record<string, { name: string; unit: string }> = {
   energy_kcal: { name: "エネルギー", unit: "kcal" },
   protein_g: { name: "たんぱく質", unit: "g" },
   fat_g: { name: "脂質", unit: "g" },

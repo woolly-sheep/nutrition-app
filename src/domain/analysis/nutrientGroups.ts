@@ -60,6 +60,11 @@ export type PetalValue = {
   label: string;
   /** Mean fulfilment 0..1+ (uncapped); null when no member is comparable. */
   fulfillment: number | null;
+  /**
+   * Food-only mean fulfilment 0..1+ — the solid part of the petal. Equals
+   * fulfillment when no member has a supplement share. null when unknown.
+   */
+  foodFulfillment: number | null;
   /** True when the group's mean reaches the reference (gold petal). */
   achieved: boolean;
   /** True when a member exceeded its tolerable upper limit (never gold). */
@@ -82,9 +87,17 @@ export function buildBloomModel(
   overLimitCodes: ReadonlySet<string> = new Set(),
 ): BloomModel {
   const percentByCode = new Map<string, number>();
+  const foodPercentByCode = new Map<string, number>();
   for (const item of comparable) {
     if (typeof item.percent_of_reference === "number") {
       percentByCode.set(item.nutrient_code, item.percent_of_reference);
+      // Food share defaults to the whole when no supplement split is present.
+      foodPercentByCode.set(
+        item.nutrient_code,
+        typeof item.percent_of_reference_food === "number"
+          ? item.percent_of_reference_food
+          : item.percent_of_reference,
+      );
     }
   }
 
@@ -98,15 +111,24 @@ export function buildBloomModel(
         key: group.key,
         label: group.label,
         fulfillment: null,
+        foodFulfillment: null,
         achieved: false,
         overLimit,
       };
     }
     const mean = values.reduce((sum, v) => sum + v, 0) / values.length / 100;
+    // Food-only mean over the SAME members, so the solid part is never
+    // larger than the total petal.
+    const foodValues = group.codes
+      .filter((code) => percentByCode.has(code))
+      .map((code) => foodPercentByCode.get(code) ?? 0);
+    const foodMean =
+      foodValues.reduce((sum, v) => sum + v, 0) / foodValues.length / 100;
     return {
       key: group.key,
       label: group.label,
       fulfillment: mean,
+      foodFulfillment: foodMean,
       // Over the upper limit is never celebrated as achieved (gold).
       achieved: mean >= 1 && !overLimit,
       overLimit,

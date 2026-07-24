@@ -28,6 +28,7 @@ tags:
   - name: meals
   - name: profile
   - name: analysis
+  - name: supplements
 
 paths:
   /api/foods:
@@ -323,6 +324,70 @@ paths:
                   restored: { type: integer }
         "422": { $ref: "#/components/responses/ValidationProblem" }
 
+  /api/supplements:
+    get:
+      tags: [supplements]
+      summary: サプリメント記録の取得（自己申告・食品とは分離）
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: 指定日のみ。省略時は全件。
+      responses:
+        "200":
+          description: サプリメント記録の一覧（0件も正常系）。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [supplements]
+                properties:
+                  supplements:
+                    type: array
+                    items: { $ref: "#/components/schemas/SupplementRecord" }
+    post:
+      tags: [supplements]
+      summary: サプリメント記録の追加（表示値を自己申告）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateSupplementRequest" }
+      responses:
+        "201":
+          description: 追加された記録。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [supplement]
+                properties:
+                  supplement: { $ref: "#/components/schemas/SupplementRecord" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+
+  /api/supplements/{supplement_id}:
+    delete:
+      tags: [supplements]
+      summary: サプリメント記録の削除
+      parameters:
+        - name: supplement_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: 削除完了。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted]
+                properties:
+                  deleted: { type: boolean }
+        "404":
+          description: 指定された記録が見つからない。
+
 components:
   responses:
     ValidationProblem:
@@ -502,6 +567,41 @@ components:
         meals:
           type: array
           items: { $ref: "#/components/schemas/MealRecord" }
+        supplements:
+          type: array
+          description: 復元時は任意。旧バックアップ（配列なし）も復元できる。
+          items: { $ref: "#/components/schemas/SupplementRecord" }
+
+    SupplementAmount:
+      type: object
+      required: [nutrient_code, amount]
+      properties:
+        nutrient_code: { type: string }
+        amount:
+          type: number
+          description: 製品の表示値。栄養素の単位で自己申告する。
+
+    CreateSupplementRequest:
+      type: object
+      required: [date, product_name, amounts]
+      properties:
+        date: { type: string, format: date }
+        product_name: { type: string }
+        amounts:
+          type: array
+          items: { $ref: "#/components/schemas/SupplementAmount" }
+
+    SupplementRecord:
+      type: object
+      required: [supplement_id, date, product_name, amounts, recorded_at]
+      properties:
+        supplement_id: { type: string }
+        date: { type: string, format: date }
+        product_name: { type: string }
+        amounts:
+          type: array
+          items: { $ref: "#/components/schemas/SupplementAmount" }
+        recorded_at: { type: string, format: date-time }
 
     StoredProfile:
       type: object

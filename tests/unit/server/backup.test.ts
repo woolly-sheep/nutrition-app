@@ -72,4 +72,49 @@ describe("restoreBackup", () => {
     expect(result.ok).toBe(false);
     expect(saveMeals).not.toHaveBeenCalled();
   });
+
+  it("round-trips supplements and clears them when the array is empty", async () => {
+    const supplement = {
+      supplement_id: "sup_1",
+      date: "2026-07-24",
+      product_name: "iron",
+      amounts: [{ nutrient_code: "iron_mg", amount: 5 }],
+      recorded_at: "2026-07-24T00:00:00.000Z",
+    };
+    const exported = await getBackup({
+      loadMeals: async () => [validMeal()],
+      loadProfile: async () => null,
+      loadSupplements: async () => [supplement],
+    });
+    expect(exported.supplements).toHaveLength(1);
+
+    const saveSupplements = vi.fn(async () => {});
+    const result = await restoreBackup(
+      { version: 1, meals: [validMeal()], supplements: [supplement] },
+      { seed, saveMeals: vi.fn(), saveProfile: vi.fn(), saveSupplements },
+    );
+    expect(result.ok).toBe(true);
+    expect(saveSupplements).toHaveBeenCalledWith([supplement]);
+  });
+
+  it("rejects a supplement with an unknown nutrient without writing", async () => {
+    const saveMeals = vi.fn(async () => {});
+    const result = await restoreBackup(
+      {
+        meals: [validMeal()],
+        supplements: [
+          {
+            supplement_id: "s",
+            date: "2026-07-24",
+            product_name: "x",
+            amounts: [{ nutrient_code: "energy_kcal", amount: 1 }],
+            recorded_at: "2026-07-24T00:00:00.000Z",
+          },
+        ],
+      },
+      { seed, saveMeals, saveProfile: vi.fn(), saveSupplements: vi.fn() },
+    );
+    expect(result.ok).toBe(false);
+    expect(saveMeals).not.toHaveBeenCalled();
+  });
 });

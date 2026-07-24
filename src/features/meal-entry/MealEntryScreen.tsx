@@ -11,6 +11,7 @@ import type { DayMeal } from "../../server/api/handlers/listDayMeals";
 import type { MealType } from "../../server/api/schemas/meals";
 import { FoodSearchBox, type DraftItem } from "../food-search/FoodSearchBox";
 import { NutrientFinder } from "../food-search/NutrientFinder";
+import { SupplementPanel } from "./SupplementPanel";
 
 /**
  * 記録 tab (UI design v0.1 §4.2 + v0.3 addendum). Search + grams input +
@@ -587,6 +588,13 @@ export function MealEntryScreen() {
         </p>
       )}
 
+      <details style={{ marginTop: "28px" }}>
+        <summary style={styles.supplementSummary}>サプリメントを記録</summary>
+        <div style={{ marginTop: "10px" }}>
+          <SupplementPanel date={date} />
+        </div>
+      </details>
+
       <footer style={styles.footer}>
         <p style={styles.subtext}>
           出典: 日本食品標準成分表(八訂)。表示は推定値です。
@@ -797,4 +805,13 @@ const styles = {
   },
   subtext: { color: "var(--color-subtext)", fontSize: "13px", margin: 0 },
   footer: { marginTop: "24px" },
+  supplementSummary: {
+    minHeight: "var(--tap-target-min)",
+    display: "flex",
+    alignItems: "center",
+    cursor: "pointer",
+    fontSize: "14px",
+    color: "var(--color-primary)",
+    fontWeight: 700,
+  },
 } satisfies Record<string, React.CSSProperties>;

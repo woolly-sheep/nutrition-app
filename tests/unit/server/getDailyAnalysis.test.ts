@@ -178,4 +178,68 @@ describe("getDailyAnalysis", () => {
       );
     }
   });
+
+  it("splits food and supplement intake and judges on the combined total", async () => {
+    const result = await getDailyAnalysis("2026-07-15", {
+      seed,
+      loadProfile: async () => profile,
+      loadMeals: async () => [
+        meal([{ food_id: "food_rice_cooked_white_001", intake_g: 150 }]),
+      ],
+      loadSupplements: async () => [
+        {
+          supplement_id: "sup_1",
+          date: "2026-07-15",
+          product_name: "iron tablet",
+          amounts: [{ nutrient_code: "iron_mg", amount: 6 }],
+          recorded_at: "2026-07-15T00:00:00.000Z",
+        },
+      ],
+    });
+    expect(result.has_supplements).toBe(true);
+    const items = [
+      ...result.summary!.achieved,
+      ...result.summary!.insufficient,
+    ];
+    const iron = items.find((item) => item.nutrient_code === "iron_mg")!;
+    // food 0.15 (rice) + supplement 6 = 6.15, judged against the RDA 7.5
+    expect(iron.food_amount).toBeCloseTo(0.15, 5);
+    expect(iron.supplement_amount).toBe(6);
+    expect(iron.intake_amount).toBeCloseTo(6.15, 5);
+    expect(iron.percent_of_reference_food).toBeLessThan(
+      iron.percent_of_reference!,
+    );
+    // a nutrient with no supplement keeps a zero supplement share
+    const calcium = items.find((item) => item.nutrient_code === "calcium_mg");
+    if (calcium) {
+      expect(calcium.supplement_amount).toBe(0);
+    }
+  });
+
+  it("flags supplement-only magnesium against the non-food limit", async () => {
+    const result = await getDailyAnalysis("2026-07-15", {
+      seed,
+      loadProfile: async () => profile,
+      loadMeals: async () => [],
+      loadSupplements: async () => [
+        {
+          supplement_id: "sup_mg",
+          date: "2026-07-15",
+          product_name: "magnesium",
+          amounts: [{ nutrient_code: "magnesium_mg", amount: 400 }],
+          recorded_at: "2026-07-15T00:00:00.000Z",
+        },
+      ],
+    });
+    // supplements alone still count as records
+    expect(result.has_records).toBe(true);
+    const limit = result.summary!.non_food_limits.find(
+      (item) => item.nutrient_code === "magnesium_mg",
+    );
+    expect(limit).toBeDefined();
+    expect(limit!.limit_value).toBe(350);
+    expect(limit!.supplement_amount).toBe(400);
+    expect(limit!.exceeded).toBe(true);
+    expect(limit!.note).toContain("対象外");
+  });
 });
