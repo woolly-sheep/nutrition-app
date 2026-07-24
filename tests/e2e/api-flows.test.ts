@@ -68,19 +68,30 @@ describe("API flows (e2e through route handlers)", () => {
 
   it("rejects an invalid profile and accepts a valid one", async () => {
     const invalid = await profileRoute.PUT(
-      put("/api/profile", { sex: "other", ageBand: "child" }),
+      put("/api/profile", { sex: "other", birthDate: "not-a-date" }),
     );
     expect(invalid.status).toBe(422);
     const problem = await invalid.json();
     expect(problem.errors).toContain("invalid_sex");
-    expect(problem.errors).toContain("invalid_age_band");
+    expect(problem.errors).toContain("invalid_birth_date");
+
+    const tooYoung = await profileRoute.PUT(
+      put("/api/profile", { sex: "male", birthDate: "2020-01-01" }),
+    );
+    expect(tooYoung.status).toBe(422);
+    expect((await tooYoung.json()).errors).toContain(
+      "age_below_supported_range",
+    );
 
     const valid = await profileRoute.PUT(
-      put("/api/profile", { sex: "male", ageBand: "adult_30_49" }),
+      put("/api/profile", { sex: "male", birthDate: "1990-05-20" }),
     );
     expect(valid.status).toBe(200);
     const saved = await (await profileRoute.GET()).json();
-    expect(saved.profile).toEqual({ sex: "male", ageBand: "adult_30_49" });
+    expect(saved.profile.sex).toBe("male");
+    expect(saved.profile.birthDate).toBe("1990-05-20");
+    // Band is derived for display, never persisted.
+    expect(saved.profile.ageBand).toBe("adult_30_49");
   });
 
   it("searches foods and returns empty results as 200 with a message", async () => {

@@ -11,6 +11,7 @@ import { loadSeed } from "../../../seed/loadSeed";
 import type { Seed } from "../../../seed/types";
 import { listMeals } from "../../store/mealStore";
 import { readProfile, type StoredProfile } from "../../store/profileStore";
+import { resolveProfileForDate } from "../profileResolution";
 import type { MealRecord } from "../schemas/meals";
 import {
   DATA_SOURCES,
@@ -59,6 +60,9 @@ export async function getWeeklyAnalysis(
     };
   }
 
+  const weekResolution = resolveProfileForDate(profile, date);
+  const weekBand = weekResolution.ok ? weekResolution.profile.ageBand : null;
+
   const days: WeeklyDayInput[] = [];
   for (const dayDate of evaluatedDates) {
     days.push({ date: dayDate, items: await dayItems(dayDate, profile) });
@@ -67,7 +71,10 @@ export async function getWeeklyAnalysis(
 
   return {
     ...base,
-    profile,
+    profile: {
+      ...profile,
+      ...(weekBand ? { ageBand: weekBand } : {}),
+    },
     profile_required: false,
     recorded_dates: summary.recordedDates,
     missing_dates: summary.missingDates,
@@ -98,9 +105,14 @@ export async function getWeeklyAnalysis(
         total.totalAmount,
       ]),
     );
+    // Band resolved per day: a birthday inside the week shifts it.
+    const resolved = resolveProfileForDate(dayProfile, dayDate);
+    if (!resolved.ok) {
+      return null;
+    }
     const judgments = judgeAgainstReference(
       intakeByCode,
-      { sex: dayProfile.sex, ageBand: dayProfile.ageBand },
+      resolved.profile,
       seed.nutrientReference,
     );
     return summarizeDailyIntake(judgments).comparable;

@@ -11,6 +11,7 @@ import { loadSeed } from "../../../seed/loadSeed";
 import type { Seed } from "../../../seed/types";
 import { listMeals } from "../../store/mealStore";
 import { readProfile, type StoredProfile } from "../../store/profileStore";
+import { resolveProfileForDate } from "../profileResolution";
 import type { MealRecord } from "../schemas/meals";
 import {
   DATA_SOURCES,
@@ -55,6 +56,21 @@ export async function getDailyAnalysis(
     };
   }
 
+  // Age band follows the evaluated date, so a past day keeps the band
+  // that applied on that day (decision-20260724-birthdate-profile).
+  const resolved = resolveProfileForDate(profile, date);
+  if (!resolved.ok) {
+    return {
+      ...base,
+      profile,
+      profile_required: false,
+      has_records: false,
+      summary: null,
+      warning_codes: ["unsupported_age_band"],
+    };
+  }
+  const responseProfile = { ...profile, ageBand: resolved.profile.ageBand };
+
   const meals = await loadMeals(date);
   const items = meals.flatMap((meal) =>
     meal.items.map((item) => ({
@@ -65,7 +81,7 @@ export async function getDailyAnalysis(
   if (items.length === 0) {
     return {
       ...base,
-      profile,
+      profile: responseProfile,
       profile_required: false,
       has_records: false,
       summary: null,
@@ -78,14 +94,14 @@ export async function getDailyAnalysis(
   );
   const judgments = judgeAgainstReference(
     intakeByCode,
-    { sex: profile.sex, ageBand: profile.ageBand },
+    resolved.profile,
     seed.nutrientReference,
   );
   const summary = summarizeDailyIntake(judgments);
 
   return {
     ...base,
-    profile,
+    profile: responseProfile,
     profile_required: false,
     has_records: true,
     summary: {

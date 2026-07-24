@@ -6,6 +6,7 @@ import { loadSeed } from "../../../seed/loadSeed";
 import type { Seed } from "../../../seed/types";
 import { listMeals } from "../../store/mealStore";
 import { readProfile, type StoredProfile } from "../../store/profileStore";
+import { resolveProfileForDate } from "../profileResolution";
 import type { MealRecord } from "../schemas/meals";
 import { DATA_SOURCES } from "../schemas/analysis";
 
@@ -81,9 +82,13 @@ export async function getGarden(
     const intakeByCode = new Map(
       calculation.totals.map((total) => [total.nutrientCode, total.totalAmount]),
     );
+    const resolved = resolveProfileForDate(dayProfile, dayDate);
+    if (!resolved.ok) {
+      return null;
+    }
     const judgments = judgeAgainstReference(
       intakeByCode,
-      { sex: dayProfile.sex, ageBand: dayProfile.ageBand },
+      resolved.profile,
       seed.nutrientReference,
     );
     const percents = summarizeDailyIntake(judgments)

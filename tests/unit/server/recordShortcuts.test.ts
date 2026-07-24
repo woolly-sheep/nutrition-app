@@ -137,7 +137,7 @@ function buildShortfalls(items: MealRecord["items"]) {
   );
   const judgments = judgeAgainstReference(
     intakeByCode,
-    { sex: profile.sex, ageBand: profile.ageBand },
+    { sex: profile.sex, ageBand: profile.ageBand ?? "adult_30_49" },
     seed.nutrientReference,
   );
   return summarizeDailyIntake(judgments).insufficient;
