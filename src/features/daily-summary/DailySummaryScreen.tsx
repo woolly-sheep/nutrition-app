@@ -9,6 +9,7 @@ import { WeekGarden } from "../../components/WeekGarden";
 import { formatAmount } from "../../components/RemainingCard";
 import { SourceFooter } from "../../components/SourceFooter";
 import { buildBloomModel } from "../../domain/analysis/nutrientGroups";
+import { buildDailyHeadline } from "../../domain/analysis/summaryHeadline";
 import { buildWeekGarden, type GardenDay } from "../../domain/analysis/weekGarden";
 import type {
   DailyAnalysisResponse,
@@ -16,6 +17,7 @@ import type {
 } from "../../server/api/schemas/analysis";
 import type { FoodCandidatesResponse } from "../../server/api/handlers/getFoodCandidates";
 import { AGE_BAND_LABELS, ProfileSetup, SEX_LABELS } from "./ProfileSetup";
+import { ShortfallRow } from "./ShortfallRow";
 
 /**
  * Home daily summary — 栄養バランスの花 (UI redesign 2026-07-22):
@@ -101,6 +103,13 @@ export function DailySummaryScreen() {
     ...summary.ul_reached.map((item) => ({ item, kind: "ul" as const })),
     ...summary.dg_over.map((item) => ({ item, kind: "dg" as const })),
   ];
+  const headline = buildDailyHeadline({
+    comparableCount: summary.comparable_count,
+    atLeast80Count: summary.at_least_80_count,
+    topShortfallName: summary.insufficient[0]?.nutrient_name ?? null,
+    ulReachedNames: summary.ul_reached.map((item) => item.nutrient_name),
+    dgOverNames: summary.dg_over.map((item) => item.nutrient_name),
+  });
 
   return (
     <div>
@@ -118,6 +127,11 @@ export function DailySummaryScreen() {
           )}
         </div>
       </header>
+
+      <p style={styles.headline}>
+        <span style={styles.headlineDot} aria-hidden="true" />
+        <span>{headline}</span>
+      </p>
 
       <section style={{ display: "flex", justifyContent: "center", marginTop: "8px" }}>
         <BloomFlower petals={bloom.petals} overall={bloom.overall} />
@@ -163,43 +177,15 @@ export function DailySummaryScreen() {
           </p>
         ) : (
           <>
-            {topShortfalls.map((item) => {
-              const nudge = candidateFor(candidates, item.nutrient_code);
-              return (
-                <div key={item.nutrient_code} style={{ marginBottom: "10px" }}>
-                  <div style={styles.shortfallRow}>
-                    <span style={{ width: "88px", fontSize: "14px" }}>{item.nutrient_name}</span>
-                    <div style={styles.track}>
-                      <div
-                        style={{
-                          ...styles.fill,
-                          width: `${Math.min(item.percent_of_reference ?? 0, 100)}%`,
-                        }}
-                      />
-                    </div>
-                    <span style={styles.remaining}>
-                      あと<b style={{ color: "var(--color-primary-deep)" }}>
-                        {formatAmount(item.remaining_amount ?? 0)}
-                      </b>
-                      {item.unit}
-                    </span>
-                  </div>
-                  {nudge && (
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px" }}>
-                      <Link
-                        href={`/meals?add=${encodeURIComponent(nudge.food_id)}`}
-                        style={styles.nudge}
-                        aria-label={`${nudge.display_name}を記録に追加`}
-                      >
-                        ＋ {nudge.display_name}{" "}
-                        {nudge.portion_label ?? `約${Math.round(nudge.portion_g)}g`}
-                        で基準値の約{Math.round(nudge.percent_of_shortfall)}%
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {topShortfalls.map((item, index) => (
+              <ShortfallRow
+                key={item.nutrient_code}
+                item={item}
+                nudge={candidateFor(candidates, item.nutrient_code)}
+                date={data.date}
+                showTrend={index === 0}
+              />
+            ))}
             {restCount > 0 && (
               <p style={{ color: "var(--color-subtext)", fontSize: "13px", margin: "6px 0 0" }}>
                 他の不足 {restCount}件は分析タブで確認できます。
@@ -271,43 +257,28 @@ function formatJapaneseDate(isoDate: string): string {
 }
 
 const styles = {
+  headline: {
+    display: "flex",
+    gap: "9px",
+    alignItems: "flex-start",
+    margin: "14px 0 6px",
+    padding: "12px 14px",
+    background: "var(--color-surface)",
+    borderRadius: "14px",
+    fontSize: "13.5px",
+    lineHeight: 1.5,
+  },
+  headlineDot: {
+    width: "8px",
+    height: "8px",
+    borderRadius: "50%",
+    background: "var(--color-primary)",
+    marginTop: "6px",
+    flex: "none",
+  },
   sectionTitle: {
     fontSize: "15px",
     margin: "0 0 10px",
-  },
-  shortfallRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  },
-  track: {
-    flex: 1,
-    height: "6px",
-    background: "var(--color-surface)",
-    borderRadius: "999px",
-    overflow: "hidden",
-  },
-  fill: {
-    height: "100%",
-    background: "var(--color-primary)",
-    borderRadius: "999px",
-  },
-  remaining: {
-    width: "88px",
-    textAlign: "right",
-    fontFamily: "var(--font-numeric)",
-    fontSize: "14px",
-  },
-  nudge: {
-    display: "inline-flex",
-    alignItems: "center",
-    minHeight: "var(--tap-target-min)",
-    background: "var(--color-surface)",
-    color: "var(--color-primary-deep)",
-    borderRadius: "999px",
-    padding: "6px 12px",
-    fontSize: "12px",
-    textDecoration: "none",
   },
   watchSection: {
     marginTop: "24px",

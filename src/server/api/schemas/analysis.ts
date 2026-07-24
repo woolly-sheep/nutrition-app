@@ -147,6 +147,70 @@ export type WeeklyAnalysisResponse = {
   sources: readonly string[];
 };
 
+/**
+ * GET /api/analysis/contribution?date&nutrient — for one nutrient, which
+ * recorded foods contributed it today (dashboard insight ②). Food-derived
+ * share only; a factual breakdown of the user's own records, never advice.
+ */
+export type ContributionFoodItem = {
+  food_id: string;
+  display_name: string;
+  /** Nutrient amount this food contributed. */
+  amount: number;
+  /** amount ÷ total × 100. */
+  percent: number;
+};
+
+export type NutrientContributionResponse = {
+  date: string;
+  nutrient_code: string;
+  nutrient_name: string;
+  unit: string;
+  /** false when there are no records for this day. */
+  has_records: boolean;
+  /** Total food-derived amount of this nutrient today. */
+  total_amount: number;
+  /** Top contributors, largest first. */
+  foods: readonly ContributionFoodItem[];
+  /** Combined amount beyond the listed foods. */
+  other_amount: number;
+  other_percent: number;
+  /** Mandatory source/estimate notice. */
+  notice: string;
+  sources: readonly string[];
+};
+
+/**
+ * GET /api/analysis/trend?date&nutrient&days — one nutrient's fulfilment
+ * over the trailing window ending at `date` (dashboard insight ③).
+ * Percent is intake ÷ that day's reference × 100, so the 100 line stays a
+ * fixed goal even when the age band shifts. Missing days are null, never
+ * zero-filled (same rule as the weekly report).
+ */
+export type NutrientTrendPoint = {
+  date: string;
+  /** intake ÷ reference × 100 on a recorded day, else null. */
+  percent: number | null;
+  has_record: boolean;
+};
+
+export type NutrientTrendResponse = {
+  date: string;
+  nutrient_code: string;
+  nutrient_name: string;
+  unit: string;
+  window_days: number;
+  /** true when no profile is set — series is empty. */
+  profile_required: boolean;
+  /** Oldest → newest. */
+  points: readonly NutrientTrendPoint[];
+  recorded_days: number;
+  /** Recorded days whose percent fell below the reference (100%). */
+  days_below_reference: number;
+  notice: string;
+  sources: readonly string[];
+};
+
 export const DATA_SOURCES = [
   "日本食品標準成分表(八訂)増補2023年",
   "日本人の食事摂取基準(2025年版)",
