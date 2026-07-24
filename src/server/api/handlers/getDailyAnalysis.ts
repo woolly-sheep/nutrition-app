@@ -1,3 +1,4 @@
+import { evaluateFoodUntracked } from "../../../domain/analysis/foodUntrackedNutrients";
 import { evaluateNonFoodLimits } from "../../../domain/analysis/nonFoodUpperLimits";
 import { summarizeDailyIntake } from "../../../domain/analysis/summarizeDailyIntake";
 import type {
@@ -25,6 +26,7 @@ import {
   type AnalysisExceedanceItem,
   type AnalysisNutrientItem,
   type DailyAnalysisResponse,
+  type FoodUntrackedItem,
   type NonFoodLimitItem,
 } from "../schemas/analysis";
 
@@ -148,9 +150,29 @@ export async function getDailyAnalysis(
         ),
       ),
       non_food_limits: toNonFoodLimits(supplementByCode),
+      food_untracked: toFoodUntracked(supplementByCode, resolved.profile),
     },
     warning_codes: [...new Set(calculation.warnings.map((w) => w.code))],
   };
+}
+
+function toFoodUntracked(
+  supplementByCode: ReadonlyMap<string, number>,
+  profile: Parameters<typeof evaluateFoodUntracked>[1],
+): FoodUntrackedItem[] {
+  return evaluateFoodUntracked(supplementByCode, profile).map((status) => ({
+    nutrient_code: status.nutrientCode,
+    nutrient_name: status.nutrientName,
+    unit: status.unit,
+    supplement_amount: status.supplementAmount,
+    ai: status.ai,
+    percent_of_ai: status.percentOfAi,
+    label:
+      status.ai !== null
+        ? "サプリからの摂取量です（目安量との参考比較）"
+        : "サプリからの摂取量です",
+    note: `この栄養素は食品からの摂取を追跡していないため、サプリ分のみの表示です。出典: ${status.source}。`,
+  }));
 }
 
 /** Attaches the food / supplement split to a response item. */

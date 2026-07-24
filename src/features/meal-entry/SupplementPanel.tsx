@@ -6,6 +6,7 @@ import {
   SUPPLEMENT_NUTRIENTS,
   type SupplementRecord,
 } from "../../server/api/schemas/supplements";
+import { SupplementProductManager } from "./SupplementProductManager";
 
 /**
  * サプリメント記録 (decision-20260724-supplement-intake). Self-reported: the
@@ -112,6 +113,10 @@ export function SupplementPanel({ date }: Props) {
         サプリメントで摂った分を記録します。数値は製品の表示値を入力してください。
         食品からの摂取とは分けて集計し、分析タブで内訳を表示します。
       </p>
+
+      <SupplementProductManager date={date} onLogged={() => void load()} />
+
+      <p style={styles.formHeading}>この日に記録したサプリ</p>
 
       {saved.length > 0 && (
         <ul style={styles.list}>
@@ -254,6 +259,11 @@ const styles = {
     fontSize: "12px",
     lineHeight: 1.7,
     margin: "8px 0 0",
+  },
+  formHeading: {
+    fontSize: "14px",
+    fontWeight: 700,
+    margin: "18px 0 0",
   },
   list: { listStyle: "none", margin: "12px 0 0", padding: 0 },
   listItem: {
