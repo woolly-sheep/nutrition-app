@@ -11,6 +11,10 @@ import {
   listSupplements,
   replaceAllSupplements,
 } from "../../store/supplementStore";
+import {
+  listSupplementProducts,
+  replaceAllSupplementProducts,
+} from "../../store/supplementProductStore";
 import type { ProblemDetails } from "../errors/problem";
 import { validationProblem } from "../errors/problem";
 import { validateItems } from "./createMeal";
@@ -19,12 +23,14 @@ import {
   SUPPLEMENT_NUTRIENT_CODES,
   type SupplementRecord,
 } from "../schemas/supplements";
+import type { SupplementProduct } from "../schemas/supplementProducts";
 
 /**
  * Local data backup (本人・ローカル運用の保全). GET exports meals + supplements
- * + profile as one JSON; POST restores it. Restore fully REPLACES the meals
- * and supplements files, so the whole payload is validated before anything is
- * written — an invalid import changes nothing. seed is never touched.
+ * + product presets + profile as one JSON; POST restores it. Restore fully
+ * REPLACES the meals, supplements and products files, so the whole payload is
+ * validated before anything is written — an invalid import changes nothing.
+ * seed is never touched.
  */
 
 export const BACKUP_VERSION = 1;
@@ -45,6 +51,7 @@ export type BackupFile = {
   profile: StoredProfile | null;
   meals: readonly MealRecord[];
   supplements: readonly SupplementRecord[];
+  supplement_products: readonly SupplementProduct[];
 };
 
 export type RestoreResult =
@@ -56,15 +63,20 @@ type Dependencies = {
   loadMeals?: (date?: string) => Promise<MealRecord[]>;
   loadProfile?: () => Promise<StoredProfile | null>;
   loadSupplements?: (date?: string) => Promise<SupplementRecord[]>;
+  loadSupplementProducts?: () => Promise<SupplementProduct[]>;
   saveMeals?: (meals: readonly MealRecord[]) => Promise<void>;
   saveProfile?: (profile: StoredProfile) => Promise<void>;
   saveSupplements?: (supplements: readonly SupplementRecord[]) => Promise<void>;
+  saveSupplementProducts?: (
+    products: readonly SupplementProduct[],
+  ) => Promise<void>;
 };
 
 export async function getBackup({
   loadMeals = listMeals,
   loadProfile = readProfile,
   loadSupplements = listSupplements,
+  loadSupplementProducts = listSupplementProducts,
 }: Dependencies = {}): Promise<BackupFile> {
   return {
     version: BACKUP_VERSION,
@@ -72,6 +84,7 @@ export async function getBackup({
     profile: await loadProfile(),
     meals: await loadMeals(),
     supplements: await loadSupplements(),
+    supplement_products: await loadSupplementProducts(),
   };
 }
 
@@ -82,12 +95,16 @@ export async function restoreBackup(
     saveMeals = replaceAllMeals,
     saveProfile = writeProfile,
     saveSupplements = replaceAllSupplements,
+    saveSupplementProducts = replaceAllSupplementProducts,
   }: Dependencies = {},
 ): Promise<RestoreResult> {
   if (typeof body !== "object" || body === null) {
     return { ok: false, problem: validationProblem(["invalid_body"]) };
   }
-  const { meals, profile, supplements } = body as Record<string, unknown>;
+  const { meals, profile, supplements, supplement_products } = body as Record<
+    string,
+    unknown
+  >;
 
   if (!Array.isArray(meals)) {
     return { ok: false, problem: validationProblem(["invalid_meals"]) };
@@ -121,6 +138,23 @@ export async function restoreBackup(
     }
   }
 
+  // Product presets are optional too (older backups carry none).
+  const cleanProducts: SupplementProduct[] = [];
+  if (supplement_products !== undefined) {
+    if (!Array.isArray(supplement_products)) {
+      errors.push("invalid_supplement_products");
+    } else {
+      for (const [index, raw] of supplement_products.entries()) {
+        const result = validateProduct(raw, index);
+        if (result.errors.length > 0) {
+          errors.push(...result.errors);
+        } else if (result.product) {
+          cleanProducts.push(result.product);
+        }
+      }
+    }
+  }
+
   let cleanProfile: StoredProfile | null = null;
   if (profile !== null && profile !== undefined) {
     cleanProfile = validateProfile(profile);
@@ -136,6 +170,7 @@ export async function restoreBackup(
   // Validated fully above → safe to replace.
   await saveMeals(cleanMeals);
   await saveSupplements(cleanSupplements);
+  await saveSupplementProducts(cleanProducts);
   if (cleanProfile) {
     await saveProfile(cleanProfile);
   }
@@ -201,6 +236,77 @@ function validateSupplement(
       product_name: product_name as string,
       amounts: cleanAmounts,
       recorded_at: recorded_at as string,
+    },
+  };
+}
+
+function validateProduct(
+  raw: unknown,
+  index: number,
+): { errors: string[]; product?: SupplementProduct } {
+  if (typeof raw !== "object" || raw === null) {
+    return { errors: [`product_${index}_invalid`] };
+  }
+  const { product_id, name, serving_count, serving_unit, amounts, created_at } =
+    raw as Record<string, unknown>;
+  const errors: string[] = [];
+  if (typeof product_id !== "string" || product_id === "") {
+    errors.push(`product_${index}_id`);
+  }
+  if (typeof name !== "string" || name === "") {
+    errors.push(`product_${index}_name`);
+  }
+  if (
+    typeof serving_count !== "number" ||
+    !Number.isFinite(serving_count) ||
+    serving_count <= 0
+  ) {
+    errors.push(`product_${index}_serving_count`);
+  }
+  if (typeof serving_unit !== "string" || serving_unit === "") {
+    errors.push(`product_${index}_serving_unit`);
+  }
+  if (typeof created_at !== "string") {
+    errors.push(`product_${index}_created_at`);
+  }
+  const cleanAmounts: SupplementProduct["amounts"] = [];
+  if (!Array.isArray(amounts) || amounts.length === 0) {
+    errors.push(`product_${index}_amounts`);
+  } else {
+    for (const [j, entry] of amounts.entries()) {
+      if (typeof entry !== "object" || entry === null) {
+        errors.push(`product_${index}_amount_${j}`);
+        continue;
+      }
+      const { nutrient_code, amount } = entry as Record<string, unknown>;
+      if (
+        typeof nutrient_code !== "string" ||
+        !SUPPLEMENT_NUTRIENT_CODES.has(nutrient_code) ||
+        typeof amount !== "number" ||
+        !Number.isFinite(amount) ||
+        amount <= 0
+      ) {
+        errors.push(`product_${index}_amount_${j}`);
+        continue;
+      }
+      (cleanAmounts as { nutrient_code: string; amount: number }[]).push({
+        nutrient_code,
+        amount,
+      });
+    }
+  }
+  if (errors.length > 0) {
+    return { errors };
+  }
+  return {
+    errors: [],
+    product: {
+      product_id: product_id as string,
+      name: name as string,
+      serving_count: serving_count as number,
+      serving_unit: serving_unit as string,
+      amounts: cleanAmounts,
+      created_at: created_at as string,
     },
   };
 }

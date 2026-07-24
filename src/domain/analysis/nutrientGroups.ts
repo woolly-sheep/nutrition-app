@@ -31,8 +31,8 @@ export const NUTRIENT_GROUPS: {
   { key: "fiber", label: "繊維", codes: ["dietary_fiber_g"] },
   {
     key: "vitaminFat",
-    label: "ビタA・D・E",
-    codes: ["vitamin_a_ug", "vitamin_d_ug", "vitamin_e_mg"],
+    label: "ビタA・D・E・K",
+    codes: ["vitamin_a_ug", "vitamin_d_ug", "vitamin_e_mg", "vitamin_k_ug"],
   },
   {
     key: "vitaminWater",

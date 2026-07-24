@@ -46,6 +46,7 @@ export const NUTRIENT_META: Record<string, { name: string; unit: string }> = {
   niacin_mgne: { name: "ナイアシン", unit: "mgNE" },
   vitamin_b6_mg: { name: "ビタミンB6", unit: "mg" },
   vitamin_b12_ug: { name: "ビタミンB12", unit: "ug" },
+  vitamin_k_ug: { name: "ビタミンK", unit: "ug" },
 };
 
 // Uniform provenance for every extracted nutrient row (see seed-manifest.json).

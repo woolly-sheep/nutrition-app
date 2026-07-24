@@ -117,4 +117,36 @@ describe("restoreBackup", () => {
     expect(result.ok).toBe(false);
     expect(saveMeals).not.toHaveBeenCalled();
   });
+
+  it("round-trips product presets", async () => {
+    const product = {
+      product_id: "sprod_1",
+      name: "エビオス錠",
+      serving_count: 10,
+      serving_unit: "錠",
+      amounts: [{ nutrient_code: "vitamin_b1_mg", amount: 0.6 }],
+      created_at: "2026-07-24T00:00:00.000Z",
+    };
+    const exported = await getBackup({
+      loadMeals: async () => [validMeal()],
+      loadProfile: async () => null,
+      loadSupplements: async () => [],
+      loadSupplementProducts: async () => [product],
+    });
+    expect(exported.supplement_products).toHaveLength(1);
+
+    const saveSupplementProducts = vi.fn(async () => {});
+    const result = await restoreBackup(
+      { version: 1, meals: [validMeal()], supplement_products: [product] },
+      {
+        seed,
+        saveMeals: vi.fn(),
+        saveProfile: vi.fn(),
+        saveSupplements: vi.fn(),
+        saveSupplementProducts,
+      },
+    );
+    expect(result.ok).toBe(true);
+    expect(saveSupplementProducts).toHaveBeenCalledWith([product]);
+  });
 });
