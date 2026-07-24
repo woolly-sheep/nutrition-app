@@ -33,19 +33,36 @@ paths:
   /api/foods:
     get:
       tags: [foods]
-      summary: FoodMaster 検索（公開カタログ・MVP 40食品）
+      summary: FoodMaster 検索（公開カタログ・八訂 全2,538食品）
       parameters:
         - name: q
           in: query
           required: false
           schema: { type: string }
-          description: 部分一致（display_name / official_food_name）。空なら全件。
+          description: 部分一致（display_name / official_food_name）。空なら先頭ページ。上限あり。
       responses:
         "200":
           description: 検索結果。0件も正常系（message 付き）。
           content:
             application/json:
               schema: { $ref: "#/components/schemas/FoodSearchResponse" }
+
+  /api/foods/rich:
+    get:
+      tags: [foods]
+      summary: 栄養素から探す（100gあたり含有量が多い順・事実表示）
+      parameters:
+        - name: nutrient
+          in: query
+          required: true
+          schema: { type: string }
+          description: 対象の栄養素コード（選択可能な栄養素のみ）。
+      responses:
+        "200":
+          description: 含有量の多い順の食品（上限あり）。推奨ではない旨の notice 付き。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RichFoodsResponse" }
 
   /api/meals:
     get:
@@ -254,6 +271,58 @@ paths:
               schema: { $ref: "#/components/schemas/FoodCandidatesResponse" }
         "422": { $ref: "#/components/responses/ValidationProblem" }
 
+  /api/analysis/garden:
+    get:
+      tags: [analysis]
+      summary: 月間の庭（直近5週間・1日1輪の充足率）
+      description: |
+        各日の充足率は当日の comparable(RDA/AI)充足率の平均。記録なしの日は
+        null（つぼみ）で、0 埋めしない。区分未設定は days 空・profile_required。
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: 直近日数分の日次充足率。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GardenResponse" }
+
+  /api/backup:
+    get:
+      tags: [backup]
+      summary: データのエクスポート（記録＋区分設定）
+      responses:
+        "200":
+          description: バックアップJSON。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BackupFile" }
+    post:
+      tags: [backup]
+      summary: データの復元（現在の記録を全置換・要確認）
+      description: |
+        payload 全体を検証してから書き込む。1件でも不正なら 422 を返し、
+        何も変更しない。seed には触れない。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BackupFile" }
+      responses:
+        "200":
+          description: 復元件数。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [restored]
+                properties:
+                  restored: { type: integer }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+
 components:
   responses:
     ValidationProblem:
@@ -375,6 +444,71 @@ components:
         message:
           type: string
           description: 0件時のみ。エラーではなく正常な検索結果。
+
+    RichFoodItem:
+      type: object
+      required: [food_id, display_name, amount_per_100g, unit]
+      properties:
+        food_id: { type: string }
+        display_name: { type: string }
+        amount_per_100g: { type: number }
+        unit: { type: string }
+
+    RichFoodsResponse:
+      type: object
+      required: [nutrient_code, foods, notice]
+      properties:
+        nutrient_code: { type: string }
+        foods:
+          type: array
+          items: { $ref: "#/components/schemas/RichFoodItem" }
+        notice:
+          type: string
+          description: 事実表示であり摂取の推奨ではない旨。
+
+    GardenDayCell:
+      type: object
+      required: [date, fulfillment]
+      properties:
+        date: { type: string, format: date }
+        fulfillment:
+          type: [number, "null"]
+          description: 当日の平均充足率(0..1+)。記録なしは null（0埋めしない）。
+
+    GardenResponse:
+      type: object
+      required: [date, profile_required, days, disclaimer, sources]
+      properties:
+        date: { type: string, format: date }
+        profile_required: { type: boolean }
+        days:
+          type: array
+          items: { $ref: "#/components/schemas/GardenDayCell" }
+        disclaimer: { type: string }
+        sources:
+          type: array
+          items: { type: string }
+
+    BackupFile:
+      type: object
+      required: [version, exported_at, profile, meals]
+      properties:
+        version: { type: integer }
+        exported_at: { type: string, format: date-time }
+        profile:
+          oneOf:
+            - { $ref: "#/components/schemas/StoredProfile" }
+            - { type: "null" }
+        meals:
+          type: array
+          items: { $ref: "#/components/schemas/MealRecord" }
+
+    StoredProfile:
+      type: object
+      required: [sex, ageBand]
+      properties:
+        sex: { type: string, enum: [male, female] }
+        ageBand: { type: string }
 
     UsualFoodsResponse:
       type: object

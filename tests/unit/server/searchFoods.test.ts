@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadSeed } from "../../../src/seed/loadSeed";
-import { searchFoods } from "../../../src/server/api/handlers/searchFoods";
+import { MAX_RESULTS, searchFoods } from "../../../src/server/api/handlers/searchFoods";
 import { EMPTY_SEARCH_MESSAGE } from "../../../src/server/api/schemas/foods";
 
 const seed = loadSeed();
@@ -14,10 +14,16 @@ describe("searchFoods", () => {
     ).toBe(true);
   });
 
-  it("returns the full MVP catalog for an empty query", () => {
+  it("returns a capped browse page for an empty query", () => {
     const result = searchFoods("", seed);
-    expect(result.foods).toHaveLength(seed.foodMaster.length);
+    expect(result.foods).toHaveLength(Math.min(MAX_RESULTS, seed.foodMaster.length));
     expect(result.message).toBeUndefined();
+  });
+
+  it("caps large result sets to MAX_RESULTS", () => {
+    // A very common substring matches far more than the cap across 2,538 foods.
+    const result = searchFoods("う", seed);
+    expect(result.foods.length).toBeLessThanOrEqual(MAX_RESULTS);
   });
 
   it("returns 200-style empty result with message, not an error (API v0.2 §6)", () => {

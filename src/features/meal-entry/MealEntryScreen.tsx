@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   FoodCandidatesResponse,
 } from "../../server/api/handlers/getFoodCandidates";
@@ -10,6 +10,7 @@ import type {
 import type { DayMeal } from "../../server/api/handlers/listDayMeals";
 import type { MealType } from "../../server/api/schemas/meals";
 import { FoodSearchBox, type DraftItem } from "../food-search/FoodSearchBox";
+import { NutrientFinder } from "../food-search/NutrientFinder";
 
 /**
  * 記録 tab (UI design v0.1 §4.2 + v0.3 addendum). Search + grams input +
@@ -82,6 +83,38 @@ export function MealEntryScreen() {
   useEffect(() => {
     void loadShortcuts();
   }, [loadShortcuts]);
+
+  // One-tap add from the home "あと少し" nudge (/meals?add=<food_id>).
+  // Prefills a draft from the server-validated candidate — never auto-saves.
+  const addParamHandled = useRef(false);
+  useEffect(() => {
+    if (addParamHandled.current || !candidates?.has_analysis) {
+      return;
+    }
+    const requested = new URLSearchParams(window.location.search).get("add");
+    if (!requested) {
+      return;
+    }
+    const candidate = candidates.candidates.find((c) => c.food_id === requested);
+    if (!candidate) {
+      return;
+    }
+    addParamHandled.current = true;
+    setDraftItems((prev) =>
+      prev.some((item) => item.foodId === candidate.food_id)
+        ? prev
+        : [
+            ...prev,
+            {
+              foodId: candidate.food_id,
+              displayName: candidate.display_name,
+              intakeG: candidate.portion_g,
+              estimatedKcal: candidate.estimated_kcal,
+            },
+          ],
+    );
+    setSaveState("idle");
+  }, [candidates]);
 
   const shiftDate = (days: number) => {
     const next = isoDatePlusDays(date, days);
@@ -261,6 +294,13 @@ export function MealEntryScreen() {
       </header>
 
       <FoodSearchBox onAdd={handleAdd} />
+
+      <details style={{ marginTop: "12px" }}>
+        <summary style={styles.finderSummary}>栄養素から探す</summary>
+        <div style={{ marginTop: "8px" }}>
+          <NutrientFinder onAdd={handleAdd} />
+        </div>
+      </details>
 
       {usual !== null && usual.items.length > 0 && (
         <section style={{ marginTop: "24px" }}>
@@ -677,6 +717,15 @@ const styles = {
     cursor: "pointer",
   },
   sectionTitle: { fontSize: "15px", margin: "0 0 8px" },
+  finderSummary: {
+    minHeight: "var(--tap-target-min)",
+    display: "flex",
+    alignItems: "center",
+    cursor: "pointer",
+    fontSize: "14px",
+    color: "var(--color-primary)",
+    fontWeight: 700,
+  },
   sectionHint: {
     fontSize: "12px",
     fontWeight: 400,

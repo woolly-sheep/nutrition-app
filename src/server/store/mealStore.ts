@@ -72,6 +72,13 @@ export async function deleteMeal(mealId: string): Promise<boolean> {
   return true;
 }
 
+/** Replaces the whole meals file (backup restore). Caller validates first. */
+export async function replaceAllMeals(
+  meals: readonly MealRecord[],
+): Promise<void> {
+  await writeAll(meals);
+}
+
 async function readAll(): Promise<MealRecord[]> {
   try {
     const raw = await readFile(mealsFile(), "utf-8");

@@ -11,3 +11,6 @@ coverage/
 *.log
 data/
 tsconfig.tsbuildinfo
+
+# python build script cache
+scripts/__pycache__/

@@ -13,6 +13,8 @@ import type {
   DailyAnalysisResponse,
 } from "../../server/api/schemas/analysis";
 import { AGE_BAND_LABELS, SEX_LABELS } from "../daily-summary/ProfileSetup";
+import { BackupPanel } from "../../components/BackupPanel";
+import { MonthGarden } from "../../components/MonthGarden";
 import { WeeklyReport } from "./WeeklyReport";
 
 /**
@@ -82,6 +84,13 @@ export function AnalysisScreen() {
           食事を記録する →
         </Link>
         <WeeklyReport date={data.date} />
+        <MonthGarden date={data.date} />
+        <details style={{ marginTop: "24px" }}>
+          <summary style={styles.backupSummary}>データのバックアップ</summary>
+          <div style={{ marginTop: "10px" }}>
+            <BackupPanel />
+          </div>
+        </details>
         <SourceFooter sources={data.sources} />
       </div>
     );
@@ -136,6 +145,15 @@ export function AnalysisScreen() {
       </Link>
 
       <WeeklyReport date={data.date} />
+
+      <MonthGarden date={data.date} />
+
+      <details style={{ marginTop: "24px" }}>
+        <summary style={styles.backupSummary}>データのバックアップ</summary>
+        <div style={{ marginTop: "10px" }}>
+          <BackupPanel />
+        </div>
+      </details>
 
       <SourceFooter sources={data.sources} />
     </div>
@@ -246,6 +264,15 @@ function formatJapaneseDate(isoDate: string): string {
 const styles = {
   title: { fontSize: "20px", margin: 0 },
   sectionTitle: { fontSize: "15px", margin: "0 0 10px" },
+  backupSummary: {
+    minHeight: "var(--tap-target-min)",
+    display: "flex",
+    alignItems: "center",
+    cursor: "pointer",
+    fontSize: "14px",
+    color: "var(--color-primary)",
+    fontWeight: 700,
+  },
   ulSection: {
     marginTop: "20px",
     padding: "12px",
