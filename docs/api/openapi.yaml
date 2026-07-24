@@ -272,6 +272,62 @@ paths:
               schema: { $ref: "#/components/schemas/FoodCandidatesResponse" }
         "422": { $ref: "#/components/responses/ValidationProblem" }
 
+  /api/analysis/contribution:
+    get:
+      tags: [analysis]
+      summary: 栄養素の寄与度（当日・食品別の内訳）
+      description: |
+        指定した栄養素について、当日記録した食品ごとの寄与（公式含有量×g）を
+        大きい順に返す。食品由来分のみの事実提示で、摂取の推奨ではない。
+        記録なしの日は has_records=false・foods 0 件（正常系）。
+        応答には必ず notice（出典・推定である旨）を含む。
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: nutrient
+          in: query
+          required: true
+          schema: { type: string, pattern: "^[a-z0-9_]+$" }
+      responses:
+        "200":
+          description: 食品別の寄与（0件も正常系）。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NutrientContributionResponse" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+
+  /api/analysis/trend:
+    get:
+      tags: [analysis]
+      summary: 栄養素の推移（直近 N 日・充足率の時系列）
+      description: |
+        指定した栄養素の充足率（intake ÷ 当日基準 × 100）を直近 days 日分
+        （既定 28・最大 90）古い順に返す。記録なしの日は percent=null で、
+        0 埋めしない。区分未設定は points 空・profile_required。
+        応答には必ず notice（記録日のみ・推定である旨）を含む。
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: nutrient
+          in: query
+          required: true
+          schema: { type: string, pattern: "^[a-z0-9_]+$" }
+        - name: days
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 90, default: 28 }
+      responses:
+        "200":
+          description: 充足率の時系列（記録日のみ集計）。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NutrientTrendResponse" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+
   /api/analysis/garden:
     get:
       tags: [analysis]
@@ -912,3 +968,68 @@ components:
         notice:
           type: string
           description: 必須注記（摂取の推奨ではない旨）。省略禁止。
+
+    NutrientContributionResponse:
+      type: object
+      required: [date, nutrient_code, nutrient_name, unit, has_records, total_amount, foods, other_amount, other_percent, notice, sources]
+      properties:
+        date: { type: string, format: date }
+        nutrient_code: { type: string }
+        nutrient_name: { type: string }
+        unit: { type: string }
+        has_records: { type: boolean }
+        total_amount:
+          type: number
+          description: 当日の食品由来の合計量。
+        foods:
+          type: array
+          description: 寄与の大きい食品から順。
+          items:
+            type: object
+            required: [food_id, display_name, amount, percent]
+            properties:
+              food_id: { type: string }
+              display_name: { type: string }
+              amount: { type: number }
+              percent: { type: number }
+        other_amount:
+          type: number
+          description: 上位食品以外の合計量。
+        other_percent: { type: number }
+        notice:
+          type: string
+          description: 必須注記（出典・推定である旨）。省略禁止。
+        sources:
+          type: array
+          items: { type: string }
+
+    NutrientTrendResponse:
+      type: object
+      required: [date, nutrient_code, nutrient_name, unit, window_days, profile_required, points, recorded_days, days_below_reference, notice, sources]
+      properties:
+        date: { type: string, format: date }
+        nutrient_code: { type: string }
+        nutrient_name: { type: string }
+        unit: { type: string }
+        window_days: { type: integer }
+        profile_required: { type: boolean }
+        points:
+          type: array
+          description: 古い順。記録なしの日は percent=null（0 埋めしない）。
+          items:
+            type: object
+            required: [date, percent, has_record]
+            properties:
+              date: { type: string, format: date }
+              percent: { type: [number, "null"] }
+              has_record: { type: boolean }
+        recorded_days: { type: integer }
+        days_below_reference:
+          type: integer
+          description: 記録日のうち充足率が基準（100%）を下回った日数。
+        notice:
+          type: string
+          description: 必須注記（記録日のみ・推定である旨）。省略禁止。
+        sources:
+          type: array
+          items: { type: string }
