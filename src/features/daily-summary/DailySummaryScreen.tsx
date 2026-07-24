@@ -112,7 +112,8 @@ export function DailySummaryScreen() {
           <h1 style={{ fontSize: "20px", margin: 0 }}>今日の栄養</h1>
           {data.profile && (
             <span style={{ color: "var(--color-subtext)", fontSize: "12px" }}>
-              {AGE_BAND_LABELS[data.profile.ageBand]} {SEX_LABELS[data.profile.sex]}
+              {data.profile.ageBand ? `${AGE_BAND_LABELS[data.profile.ageBand]} ` : ""}
+              {SEX_LABELS[data.profile.sex]}
             </span>
           )}
         </div>

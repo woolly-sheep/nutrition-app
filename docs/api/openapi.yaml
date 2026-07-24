@@ -197,7 +197,7 @@ paths:
   /api/profile:
     get:
       tags: [profile]
-      summary: 基準値区分（年齢帯×性別）のローカル設定を取得
+      summary: 基準の区分（生年月日×性別）のローカル設定を取得
       responses:
         "200":
           description: 未設定時は profile が null。
@@ -206,7 +206,7 @@ paths:
               schema: { $ref: "#/components/schemas/ProfileResponse" }
     put:
       tags: [profile]
-      summary: 基準値区分を設定（冪等）
+      summary: 基準の区分を設定（生年月日×性別・冪等）
       requestBody:
         required: true
         content:
@@ -505,10 +505,16 @@ components:
 
     StoredProfile:
       type: object
-      required: [sex, ageBand]
+      required: [sex]
       properties:
         sex: { type: string, enum: [male, female] }
-        ageBand: { type: string }
+        birthDate:
+          type: string
+          format: date
+          description: 保存される正本。年齢帯は評価対象日ごとにここから導出する。
+        ageBand:
+          type: string
+          description: 導出結果（表示用）。生年月日を持たない旧プロフィールでは保存値。
 
     UsualFoodsResponse:
       type: object
@@ -529,12 +535,15 @@ components:
 
     Profile:
       type: object
-      required: [sex, ageBand]
+      required: [sex, birthDate]
       properties:
         sex: { type: string, enum: [male, female] }
-        ageBand:
+        birthDate:
           type: string
-          enum: [adult_18_29, adult_30_49, adult_50_64, adult_65_74, adult_75_plus]
+          format: date
+          description: >-
+            YYYY-MM-DD。18歳未満・120歳超は422（収録している基準値は成人のみのため、
+            近い区分での代替比較は行わない）。
 
     ProfileResponse:
       type: object

@@ -7,6 +7,7 @@ import { loadSeed } from "../../../seed/loadSeed";
 import type { Seed } from "../../../seed/types";
 import { listMeals } from "../../store/mealStore";
 import { readProfile, type StoredProfile } from "../../store/profileStore";
+import { resolveProfileForDate } from "../profileResolution";
 import type { MealRecord } from "../schemas/meals";
 
 export type FoodCandidateItem = {
@@ -80,9 +81,13 @@ export async function getFoodCandidates(
   const intakeByCode = new Map(
     calculation.totals.map((total) => [total.nutrientCode, total.totalAmount]),
   );
+  const resolved = resolveProfileForDate(profile, date);
+  if (!resolved.ok) {
+    return empty;
+  }
   const judgments = judgeAgainstReference(
     intakeByCode,
-    { sex: profile.sex, ageBand: profile.ageBand },
+    resolved.profile,
     seed.nutrientReference,
   );
   const summary = summarizeDailyIntake(judgments);

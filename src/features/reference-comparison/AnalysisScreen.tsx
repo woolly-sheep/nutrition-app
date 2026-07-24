@@ -12,6 +12,7 @@ import type {
   AnalysisNutrientItem,
   DailyAnalysisResponse,
 } from "../../server/api/schemas/analysis";
+import { ProfilePanel } from "../daily-summary/ProfilePanel";
 import { AGE_BAND_LABELS, SEX_LABELS } from "../daily-summary/ProfileSetup";
 import { BackupPanel } from "../../components/BackupPanel";
 import { MonthGarden } from "../../components/MonthGarden";
@@ -86,6 +87,12 @@ export function AnalysisScreen() {
         <WeeklyReport date={data.date} />
         <MonthGarden date={data.date} />
         <details style={{ marginTop: "24px" }}>
+          <summary style={styles.backupSummary}>基準の区分（生年月日・性別）</summary>
+          <div style={{ marginTop: "10px" }}>
+            <ProfilePanel />
+          </div>
+        </details>
+        <details style={{ marginTop: "12px" }}>
           <summary style={styles.backupSummary}>データのバックアップ</summary>
           <div style={{ marginTop: "10px" }}>
             <BackupPanel />
@@ -105,7 +112,7 @@ export function AnalysisScreen() {
         <p style={{ color: "var(--color-subtext)", fontSize: "13px", margin: 0 }}>
           {formatJapaneseDate(data.date)} · 食事摂取基準(2025)
           {data.profile &&
-            ` · ${AGE_BAND_LABELS[data.profile.ageBand]} ${SEX_LABELS[data.profile.sex]}`}
+            ` · ${data.profile.ageBand ? `${AGE_BAND_LABELS[data.profile.ageBand]} ` : ""}${SEX_LABELS[data.profile.sex]}`}
         </p>
         <h1 style={{ ...styles.title, margin: "4px 0 0" }}>基準値との比較</h1>
       </header>
@@ -149,6 +156,13 @@ export function AnalysisScreen() {
       <MonthGarden date={data.date} />
 
       <details style={{ marginTop: "24px" }}>
+        <summary style={styles.backupSummary}>基準の区分（生年月日・性別）</summary>
+        <div style={{ marginTop: "10px" }}>
+          <ProfilePanel />
+        </div>
+      </details>
+
+      <details style={{ marginTop: "12px" }}>
         <summary style={styles.backupSummary}>データのバックアップ</summary>
         <div style={{ marginTop: "10px" }}>
           <BackupPanel />

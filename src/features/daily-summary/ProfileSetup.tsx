@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { resolveAgeBand } from "../../domain/reference/ageBand";
 import type { AgeBand, Sex } from "../../domain/reference/types";
 
 /**
  * Onboarding (UI design v0.4 §2): what the app does, the mandatory
- * first-use disclaimer (policy §5), the DRI 2025 demographic selection,
+ * first-use disclaimer (policy §5), the DRI 2025 demographic (birth date
+ * × sex — the band is derived, not picked),
  * and a consent-labelled CTA. Saving the profile is the consent action
  * in the MVP (consented_at persistence comes with auth). No user name
  * anywhere — nameless wording is the formal decision until auth (§3).
@@ -30,12 +32,13 @@ type Props = {
 };
 
 export function ProfileSetup({ disclaimer, onSaved }: Props) {
-  const [ageBand, setAgeBand] = useState<AgeBand | null>(null);
+  const [birthDate, setBirthDate] = useState("");
   const [sex, setSex] = useState<Sex | null>(null);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  const canSave = ageBand !== null && sex !== null && !saving;
+  const preview = previewBand(birthDate);
+  const canSave = preview.ok && sex !== null && !saving;
 
   const handleSave = async () => {
     if (!canSave) {
@@ -47,7 +50,7 @@ export function ProfileSetup({ disclaimer, onSaved }: Props) {
       const response = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ageBand, sex }),
+        body: JSON.stringify({ birthDate, sex }),
       });
       if (!response.ok) {
         setFailed(true);
@@ -104,28 +107,27 @@ export function ProfileSetup({ disclaimer, onSaved }: Props) {
       </section>
 
       <h2 style={{ fontSize: "16px", margin: "20px 0 4px" }}>
-        比較する基準の区分を選んでください
+        比較する基準の区分を設定します
       </h2>
       <p style={{ color: "var(--color-subtext)", fontSize: "13px", margin: 0 }}>
         食事摂取基準(2025)は年齢・性別ごとに基準値が異なります。
-        選んだ区分との比較のみを行い、この設定は端末内にのみ保存されます。
+        生年月日から区分を自動で判定し、この設定は端末内にのみ保存されます。
       </p>
 
       <fieldset style={styles.fieldset}>
-        <legend style={styles.legend}>年齢</legend>
-        <div style={styles.optionRow}>
-          {(Object.keys(AGE_BAND_LABELS) as AgeBand[]).map((band) => (
-            <button
-              key={band}
-              type="button"
-              onClick={() => setAgeBand(band)}
-              aria-pressed={ageBand === band}
-              style={optionStyle(ageBand === band)}
-            >
-              {AGE_BAND_LABELS[band]}
-            </button>
-          ))}
-        </div>
+        <legend style={styles.legend}>生年月日</legend>
+        <input
+          type="date"
+          value={birthDate}
+          max={TODAY}
+          onChange={(event) => setBirthDate(event.target.value)}
+          aria-label="生年月日"
+          aria-describedby="birth-date-note"
+          style={styles.dateInput}
+        />
+        <p id="birth-date-note" style={styles.bandNote}>
+          {bandMessage(preview)}
+        </p>
       </fieldset>
 
       <fieldset style={styles.fieldset}>
@@ -174,6 +176,36 @@ export function ProfileSetup({ disclaimer, onSaved }: Props) {
   );
 }
 
+const TODAY = new Date().toISOString().slice(0, 10);
+
+type BandPreview =
+  | { ok: true; ageBand: AgeBand; age: number }
+  | { ok: false; reason: "empty" | "under_18" };
+
+/**
+ * Same derivation the server applies, mirrored so the setting screen can
+ * show which band the entered date lands in before saving.
+ */
+function previewBand(birthDate: string): BandPreview {
+  if (birthDate === "" || birthDate > TODAY) {
+    return { ok: false, reason: "empty" };
+  }
+  const resolution = resolveAgeBand(birthDate, TODAY);
+  return resolution.ok
+    ? { ok: true, ageBand: resolution.ageBand, age: resolution.age }
+    : { ok: false, reason: "under_18" };
+}
+
+function bandMessage(preview: BandPreview): string {
+  if (preview.ok) {
+    return `現在 ${preview.age}歳 · 基準の区分「${AGE_BAND_LABELS[preview.ageBand]}」で比較します`;
+  }
+  if (preview.reason === "under_18") {
+    return "食事摂取基準(2025)のこのアプリ収録分は18歳以上のみです。18歳未満の基準値は収録していないため比較できません。";
+  }
+  return "生年月日を入れると、比較する区分が決まります。";
+}
+
 function optionStyle(selected: boolean): React.CSSProperties {
   return {
     minHeight: "var(--tap-target-min)",
@@ -203,6 +235,21 @@ const styles = {
     display: "flex",
     flexWrap: "wrap",
     gap: "8px",
+  },
+  dateInput: {
+    minHeight: "var(--tap-target-min)",
+    padding: "0 12px",
+    border: "1px solid var(--color-primary)",
+    borderRadius: "8px",
+    background: "var(--color-base)",
+    color: "var(--color-text)",
+    fontSize: "16px",
+  },
+  bandNote: {
+    color: "var(--color-subtext)",
+    fontSize: "12px",
+    lineHeight: 1.7,
+    margin: "8px 0 0",
   },
 } satisfies Record<string, React.CSSProperties>;
 

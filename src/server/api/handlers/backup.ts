@@ -1,3 +1,4 @@
+import { isValidBirthDate } from "../../../domain/reference/ageBand";
 import { loadSeed } from "../../../seed/loadSeed";
 import type { Seed } from "../../../seed/types";
 import { listMeals, replaceAllMeals } from "../../store/mealStore";
@@ -157,13 +158,16 @@ function validateProfile(raw: unknown): StoredProfile | null {
   if (typeof raw !== "object" || raw === null) {
     return null;
   }
-  const { sex, ageBand } = raw as Record<string, unknown>;
-  if (
-    typeof sex !== "string" ||
-    typeof ageBand !== "string" ||
-    !SEXES.has(sex) ||
-    !AGE_BANDS.has(ageBand)
-  ) {
+  const { sex, ageBand, birthDate } = raw as Record<string, unknown>;
+  if (typeof sex !== "string" || !SEXES.has(sex)) {
+    return null;
+  }
+  // Accepts both shapes: birth date (current) and the fixed band written
+  // by pre-20260724 builds, so older backups still restore.
+  if (isValidBirthDate(birthDate)) {
+    return { sex, birthDate } as StoredProfile;
+  }
+  if (typeof ageBand !== "string" || !AGE_BANDS.has(ageBand)) {
     return null;
   }
   return { sex, ageBand } as StoredProfile;

@@ -32,7 +32,11 @@ describe("restoreBackup", () => {
     const saveMeals = vi.fn(async () => {});
     const saveProfile = vi.fn(async () => {});
     const result = await restoreBackup(
-      { version: 1, meals: [validMeal()], profile: { sex: "female", ageBand: "adult_18_29" } },
+      {
+        version: 1,
+        meals: [validMeal()],
+        profile: { sex: "female", birthDate: "2000-03-03" },
+      },
       { seed, saveMeals, saveProfile },
     );
     expect(result.ok).toBe(true);
@@ -62,7 +66,7 @@ describe("restoreBackup", () => {
   it("rejects an invalid profile without writing", async () => {
     const saveMeals = vi.fn(async () => {});
     const result = await restoreBackup(
-      { meals: [validMeal()], profile: { sex: "x", ageBand: "y" } },
+      { meals: [validMeal()], profile: { sex: "x", birthDate: "y" } },
       { seed, saveMeals, saveProfile: vi.fn() },
     );
     expect(result.ok).toBe(false);
