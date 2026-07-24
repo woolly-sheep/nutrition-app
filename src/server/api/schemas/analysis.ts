@@ -50,6 +50,25 @@ export type NonFoodLimitItem = {
   note: string;
 };
 
+/**
+ * A food-untracked supplement nutrient (n-3 系脂肪酸 等) compared against its
+ * AI. Only the supplement share is known — food intake is out of scope — so
+ * this is presented as "supplement vs reference", never as a fulfilment
+ * figure (decision-20260724-supplement-products).
+ */
+export type FoodUntrackedItem = {
+  nutrient_code: string;
+  nutrient_name: string;
+  unit: string;
+  supplement_amount: number;
+  /** Adequate intake, or null when the profile band is unavailable. */
+  ai: number | null;
+  /** supplement ÷ AI × 100, or null when AI is unavailable. */
+  percent_of_ai: number | null;
+  label: string;
+  note: string;
+};
+
 /** UL/DG threshold exceedance (UI design v0.2 addendum §1/§3). */
 export type AnalysisExceedanceItem = AnalysisNutrientItem & {
   threshold_value: number;
@@ -82,6 +101,8 @@ export type DailyAnalysisResponse = {
     dg_over: readonly AnalysisExceedanceItem[];
     /** Supplement-only non-food UL checks — empty unless a supplement hits one. */
     non_food_limits: readonly NonFoodLimitItem[];
+    /** Food-untracked supplement nutrients (n-3 等) vs their AI — empty unless recorded. */
+    food_untracked: readonly FoodUntrackedItem[];
   } | null;
   /** True when any nutrient this day has a supplement-derived share. */
   has_supplements: boolean;

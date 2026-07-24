@@ -12,6 +12,7 @@ import type {
   AnalysisExceedanceItem,
   AnalysisNutrientItem,
   DailyAnalysisResponse,
+  FoodUntrackedItem,
   NonFoodLimitItem,
 } from "../../server/api/schemas/analysis";
 import { ProfilePanel } from "../daily-summary/ProfilePanel";
@@ -148,6 +149,20 @@ export function AnalysisScreen() {
           ))}
           {summary.non_food_limits[0]?.note && (
             <p style={styles.noteCallout}>{summary.non_food_limits[0].note}</p>
+          )}
+        </section>
+      )}
+
+      {summary.food_untracked.length > 0 && (
+        <section style={{ marginTop: "24px" }}>
+          <h2 style={styles.sectionTitle}>
+            サプリからの摂取（食品は未追跡）
+          </h2>
+          {summary.food_untracked.map((item) => (
+            <FoodUntrackedRow key={item.nutrient_code} item={item} />
+          ))}
+          {summary.food_untracked[0]?.note && (
+            <p style={styles.noteCallout}>{summary.food_untracked[0].note}</p>
           )}
         </section>
       )}
@@ -308,6 +323,28 @@ function SplitLegend() {
         <span style={styles.legendHatch} />
         サプリ（自己申告）
       </span>
+    </div>
+  );
+}
+
+function FoodUntrackedRow({ item }: { item: FoodUntrackedItem }) {
+  return (
+    <div style={{ marginBottom: "10px" }}>
+      <div style={styles.rowHeader}>
+        <span style={{ fontSize: "14px" }}>{item.nutrient_name}</span>
+        <span style={styles.rowFigures}>
+          サプリ {formatAmount(item.supplement_amount)}
+          {item.unit}
+          {item.ai !== null && ` / 目安量 ${formatAmount(item.ai)}${item.unit}`}
+        </span>
+      </div>
+      {item.ai !== null && item.percent_of_ai !== null && (
+        <BulletBar
+          percent={item.percent_of_ai}
+          label={`${item.nutrient_name} サプリ分は目安量の ${Math.round(item.percent_of_ai)}%`}
+        />
+      )}
+      <p style={{ margin: "6px 0 0", fontSize: "12px" }}>{item.label}。</p>
     </div>
   );
 }

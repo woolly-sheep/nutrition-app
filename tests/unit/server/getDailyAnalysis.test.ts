@@ -216,6 +216,37 @@ describe("getDailyAnalysis", () => {
     }
   });
 
+  it("compares a food-untracked supplement (omega-3) against its AI, no split", async () => {
+    const result = await getDailyAnalysis("2026-07-15", {
+      seed,
+      loadProfile: async () => profile,
+      loadMeals: async () => [],
+      loadSupplements: async () => [
+        {
+          supplement_id: "sup_n3",
+          date: "2026-07-15",
+          product_name: "fish oil",
+          amounts: [{ nutrient_code: "omega3_g", amount: 1.1 }],
+          recorded_at: "2026-07-15T00:00:00.000Z",
+        },
+      ],
+    });
+    expect(result.has_records).toBe(true);
+    const n3 = result.summary!.food_untracked.find(
+      (item) => item.nutrient_code === "omega3_g",
+    );
+    expect(n3).toBeDefined();
+    expect(n3!.supplement_amount).toBe(1.1);
+    expect(n3!.ai).toBe(2.2);
+    expect(n3!.percent_of_ai).toBeCloseTo(50, 5);
+    expect(n3!.note).toContain("食品からの摂取を追跡していない");
+    const inBars = [
+      ...result.summary!.achieved,
+      ...result.summary!.insufficient,
+    ].some((item) => item.nutrient_code === "omega3_g");
+    expect(inBars).toBe(false);
+  });
+
   it("flags supplement-only magnesium against the non-food limit", async () => {
     const result = await getDailyAnalysis("2026-07-15", {
       seed,

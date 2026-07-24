@@ -388,6 +388,65 @@ paths:
         "404":
           description: 指定された記録が見つからない。
 
+  /api/supplement-products:
+    get:
+      tags: [supplements]
+      summary: 製品プリセットの取得
+      responses:
+        "200":
+          description: 登録済み製品の一覧（0件も正常系）。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [products]
+                properties:
+                  products:
+                    type: array
+                    items: { $ref: "#/components/schemas/SupplementProduct" }
+    post:
+      tags: [supplements]
+      summary: 製品プリセットの追加（◯◯あたりの成分・自己申告）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/CreateSupplementProductRequest" }
+      responses:
+        "201":
+          description: 追加された製品。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [product]
+                properties:
+                  product: { $ref: "#/components/schemas/SupplementProduct" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+
+  /api/supplement-products/{product_id}:
+    delete:
+      tags: [supplements]
+      summary: 製品プリセットの削除
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: 削除完了。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted]
+                properties:
+                  deleted: { type: boolean }
+        "404":
+          description: 指定された製品が見つからない。
+
 components:
   responses:
     ValidationProblem:
@@ -571,6 +630,10 @@ components:
           type: array
           description: 復元時は任意。旧バックアップ（配列なし）も復元できる。
           items: { $ref: "#/components/schemas/SupplementRecord" }
+        supplement_products:
+          type: array
+          description: 復元時は任意。旧バックアップ（配列なし）も復元できる。
+          items: { $ref: "#/components/schemas/SupplementProduct" }
 
     SupplementAmount:
       type: object
@@ -602,6 +665,34 @@ components:
           type: array
           items: { $ref: "#/components/schemas/SupplementAmount" }
         recorded_at: { type: string, format: date-time }
+
+    CreateSupplementProductRequest:
+      type: object
+      required: [name, serving_count, serving_unit, amounts]
+      properties:
+        name: { type: string }
+        serving_count:
+          type: number
+          description: 成分値の基準となる数量（例 10）。
+        serving_unit:
+          type: string
+          description: 数量の単位（例 錠 / 粒 / 包）。
+        amounts:
+          type: array
+          items: { $ref: "#/components/schemas/SupplementAmount" }
+
+    SupplementProduct:
+      type: object
+      required: [product_id, name, serving_count, serving_unit, amounts, created_at]
+      properties:
+        product_id: { type: string }
+        name: { type: string }
+        serving_count: { type: number }
+        serving_unit: { type: string }
+        amounts:
+          type: array
+          items: { $ref: "#/components/schemas/SupplementAmount" }
+        created_at: { type: string, format: date-time }
 
     StoredProfile:
       type: object
