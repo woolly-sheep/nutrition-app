@@ -584,6 +584,35 @@ paths:
         "422": { $ref: "#/components/responses/ValidationProblem" }
 
   /api/recipes/{recipe_id}:
+    put:
+      tags: [recipes]
+      summary: 料理プリセットの編集（名前・食材を差し替え）
+      parameters:
+        - name: recipe_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateRecipeRequest" }
+      responses:
+        "200":
+          description: 更新後の料理。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [recipe]
+                properties:
+                  recipe: { $ref: "#/components/schemas/Recipe" }
+        "404":
+          description: 指定 recipe_id が存在しない。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
     delete:
       tags: [recipes]
       summary: 料理プリセットの削除

@@ -48,6 +48,31 @@ export async function appendRecipe(
   return recipe;
 }
 
+/**
+ * Replaces one recipe's name and items. recipe_id and created_at stay
+ * untouched (the recipe keeps its identity, same policy as editing a meal or
+ * supplement record). Returns null when the id is unknown.
+ */
+export async function updateRecipeRecord(
+  id: string,
+  input: CreateRecipeRequest,
+): Promise<Recipe | null> {
+  const records = await readAll();
+  const index = records.findIndex((r) => r.recipe_id === id);
+  if (index === -1) {
+    return null;
+  }
+  const updated: Recipe = {
+    ...records[index],
+    name: input.name,
+    items: input.items,
+  };
+  const next = [...records];
+  next[index] = updated;
+  await writeAll(next);
+  return updated;
+}
+
 export async function deleteRecipe(id: string): Promise<boolean> {
   const records = await readAll();
   const next = records.filter((r) => r.recipe_id !== id);
