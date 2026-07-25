@@ -149,4 +149,59 @@ describe("restoreBackup", () => {
     expect(result.ok).toBe(true);
     expect(saveSupplementProducts).toHaveBeenCalledWith([product]);
   });
+
+  it("round-trips recipe presets", async () => {
+    const recipe = {
+      recipe_id: "rec_1",
+      name: "いつもの朝食",
+      items: [{ food_id: "food_egg_raw_001", intake_g: 50 }],
+      created_at: "2026-07-25T00:00:00.000Z",
+    };
+    const exported = await getBackup({
+      loadMeals: async () => [validMeal()],
+      loadProfile: async () => null,
+      loadSupplements: async () => [],
+      loadSupplementProducts: async () => [],
+      loadRecipes: async () => [recipe],
+    });
+    expect(exported.recipes).toHaveLength(1);
+
+    const saveRecipes = vi.fn(async () => {});
+    const result = await restoreBackup(
+      { version: 1, meals: [validMeal()], recipes: [recipe] },
+      {
+        seed,
+        saveMeals: vi.fn(),
+        saveProfile: vi.fn(),
+        saveSupplements: vi.fn(),
+        saveSupplementProducts: vi.fn(),
+        saveRecipes,
+      },
+    );
+    expect(result.ok).toBe(true);
+    expect(saveRecipes).toHaveBeenCalledWith([recipe]);
+  });
+
+  it("rejects a recipe with an unknown food without writing", async () => {
+    const saveRecipes = vi.fn(async () => {});
+    const bad = {
+      recipe_id: "rec_2",
+      name: "変な料理",
+      items: [{ food_id: "nope", intake_g: 50 }],
+      created_at: "2026-07-25T00:00:00.000Z",
+    };
+    const result = await restoreBackup(
+      { version: 1, meals: [validMeal()], recipes: [bad] },
+      {
+        seed,
+        saveMeals: vi.fn(),
+        saveProfile: vi.fn(),
+        saveSupplements: vi.fn(),
+        saveSupplementProducts: vi.fn(),
+        saveRecipes,
+      },
+    );
+    expect(result.ok).toBe(false);
+    expect(saveRecipes).not.toHaveBeenCalled();
+  });
 });

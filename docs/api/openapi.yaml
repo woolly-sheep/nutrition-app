@@ -29,6 +29,7 @@ tags:
   - name: profile
   - name: analysis
   - name: supplements
+  - name: recipes
 
 paths:
   /api/foods:
@@ -503,6 +504,64 @@ paths:
         "404":
           description: 指定された製品が見つからない。
 
+  /api/recipes:
+    get:
+      tags: [recipes]
+      summary: 料理プリセットの取得（食材と表示名・推定kcalを付与）
+      responses:
+        "200":
+          description: 登録済み料理の一覧（0件も正常系）。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [recipes]
+                properties:
+                  recipes:
+                    type: array
+                    items: { $ref: "#/components/schemas/RecipeView" }
+    post:
+      tags: [recipes]
+      summary: 料理プリセットの登録（食材＋グラム。栄養値は保存せずseedから算出）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateRecipeRequest" }
+      responses:
+        "201":
+          description: 登録された料理。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [recipe]
+                properties:
+                  recipe: { $ref: "#/components/schemas/Recipe" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+
+  /api/recipes/{recipe_id}:
+    delete:
+      tags: [recipes]
+      summary: 料理プリセットの削除
+      parameters:
+        - name: recipe_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: 削除完了。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted]
+                properties:
+                  deleted: { type: boolean }
+        "404":
+          description: 指定された料理が見つからない。
+
 components:
   responses:
     ValidationProblem:
@@ -690,6 +749,58 @@ components:
           type: array
           description: 復元時は任意。旧バックアップ（配列なし）も復元できる。
           items: { $ref: "#/components/schemas/SupplementProduct" }
+        recipes:
+          type: array
+          description: 復元時は任意。旧バックアップ（配列なし）も復元できる。
+          items: { $ref: "#/components/schemas/Recipe" }
+
+    CreateRecipeRequest:
+      type: object
+      required: [name, items]
+      properties:
+        name: { type: string }
+        items:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: { $ref: "#/components/schemas/MealItem" }
+
+    Recipe:
+      type: object
+      required: [recipe_id, name, items, created_at]
+      properties:
+        recipe_id: { type: string }
+        name: { type: string }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/MealItem" }
+        created_at: { type: string, format: date-time }
+
+    RecipeView:
+      type: object
+      required: [recipe_id, name, items, created_at, estimated_kcal]
+      description: 表示用に食材名と推定kcalを付与した料理（seedから算出・保存しない）。
+      properties:
+        recipe_id: { type: string }
+        name: { type: string }
+        items:
+          type: array
+          items:
+            type: object
+            required: [food_id, display_name, intake_g, estimated_kcal]
+            properties:
+              food_id: { type: string }
+              display_name: { type: string }
+              intake_g: { type: number }
+              estimated_kcal:
+                oneOf:
+                  - { type: number }
+                  - { type: "null" }
+        created_at: { type: string, format: date-time }
+        estimated_kcal:
+          oneOf:
+            - { type: number }
+            - { type: "null" }
 
     SupplementAmount:
       type: object
