@@ -5,6 +5,7 @@ import type {
   GardenDayCell,
   GardenResponse,
 } from "../server/api/handlers/getGarden";
+import { GardenBloom } from "./GardenBloom";
 
 /**
  * 月間の庭 — the last 5 weeks as a grid of daily blooms. Bloom size grows with
@@ -47,7 +48,7 @@ export function MonthGarden({ date }: Props) {
       <div style={styles.grid}>
         {days.map((day) => (
           <div key={day.date} title={label(day)} style={styles.cell}>
-            <MiniBloom fulfillment={day.fulfillment} />
+            <GardenBloom fulfillment={day.fulfillment} size={26} />
           </div>
         ))}
       </div>
@@ -63,37 +64,6 @@ function label(day: GardenDayCell): string {
   return day.fulfillment === null
     ? `${d} 記録なし`
     : `${d} 約${Math.round(day.fulfillment * 100)}%充足`;
-}
-
-function MiniBloom({ fulfillment }: { fulfillment: number | null }) {
-  if (fulfillment === null) {
-    return (
-      <svg width="26" height="26" viewBox="0 0 30 30" aria-hidden="true">
-        <circle cx="15" cy="15" r="3.5" fill="var(--color-surface)" />
-      </svg>
-    );
-  }
-  const capped = Math.min(fulfillment, 1);
-  const ry = 4 + capped * 3.5;
-  const achieved = fulfillment >= 1;
-  const fill = achieved ? "var(--color-accent)" : "var(--color-primary)";
-  const centerFill = achieved ? "#fdf0cf" : "var(--color-surface)";
-  return (
-    <svg width="26" height="26" viewBox="0 0 30 30" aria-hidden="true">
-      {[0, 72, 144, 216, 288].map((angle) => (
-        <ellipse
-          key={angle}
-          cx="15"
-          cy={15 - (4 + ry)}
-          rx="3.1"
-          ry={ry}
-          fill={fill}
-          transform={`rotate(${angle} 15 15)`}
-        />
-      ))}
-      <circle cx="15" cy="15" r="3" fill={centerFill} />
-    </svg>
-  );
 }
 
 const styles = {
