@@ -15,6 +15,7 @@ import {
   listSupplementProducts,
   replaceAllSupplementProducts,
 } from "../../store/supplementProductStore";
+import { listRecipes, replaceAllRecipes } from "../../store/recipeStore";
 import type { ProblemDetails } from "../errors/problem";
 import { validationProblem } from "../errors/problem";
 import { validateItems } from "./createMeal";
@@ -24,13 +25,14 @@ import {
   type SupplementRecord,
 } from "../schemas/supplements";
 import type { SupplementProduct } from "../schemas/supplementProducts";
+import type { Recipe } from "../schemas/recipes";
 
 /**
  * Local data backup (本人・ローカル運用の保全). GET exports meals + supplements
- * + product presets + profile as one JSON; POST restores it. Restore fully
- * REPLACES the meals, supplements and products files, so the whole payload is
- * validated before anything is written — an invalid import changes nothing.
- * seed is never touched.
+ * + product presets + recipe presets + profile as one JSON; POST restores it.
+ * Restore fully REPLACES the meals, supplements, products and recipes files,
+ * so the whole payload is validated before anything is written — an invalid
+ * import changes nothing. seed is never touched.
  */
 
 export const BACKUP_VERSION = 1;
@@ -52,6 +54,7 @@ export type BackupFile = {
   meals: readonly MealRecord[];
   supplements: readonly SupplementRecord[];
   supplement_products: readonly SupplementProduct[];
+  recipes: readonly Recipe[];
 };
 
 export type RestoreResult =
@@ -64,12 +67,14 @@ type Dependencies = {
   loadProfile?: () => Promise<StoredProfile | null>;
   loadSupplements?: (date?: string) => Promise<SupplementRecord[]>;
   loadSupplementProducts?: () => Promise<SupplementProduct[]>;
+  loadRecipes?: () => Promise<Recipe[]>;
   saveMeals?: (meals: readonly MealRecord[]) => Promise<void>;
   saveProfile?: (profile: StoredProfile) => Promise<void>;
   saveSupplements?: (supplements: readonly SupplementRecord[]) => Promise<void>;
   saveSupplementProducts?: (
     products: readonly SupplementProduct[],
   ) => Promise<void>;
+  saveRecipes?: (recipes: readonly Recipe[]) => Promise<void>;
 };
 
 export async function getBackup({
@@ -77,6 +82,7 @@ export async function getBackup({
   loadProfile = readProfile,
   loadSupplements = listSupplements,
   loadSupplementProducts = listSupplementProducts,
+  loadRecipes = listRecipes,
 }: Dependencies = {}): Promise<BackupFile> {
   return {
     version: BACKUP_VERSION,
@@ -85,6 +91,7 @@ export async function getBackup({
     meals: await loadMeals(),
     supplements: await loadSupplements(),
     supplement_products: await loadSupplementProducts(),
+    recipes: await loadRecipes(),
   };
 }
 
@@ -96,15 +103,14 @@ export async function restoreBackup(
     saveProfile = writeProfile,
     saveSupplements = replaceAllSupplements,
     saveSupplementProducts = replaceAllSupplementProducts,
+    saveRecipes = replaceAllRecipes,
   }: Dependencies = {},
 ): Promise<RestoreResult> {
   if (typeof body !== "object" || body === null) {
     return { ok: false, problem: validationProblem(["invalid_body"]) };
   }
-  const { meals, profile, supplements, supplement_products } = body as Record<
-    string,
-    unknown
-  >;
+  const { meals, profile, supplements, supplement_products, recipes } =
+    body as Record<string, unknown>;
 
   if (!Array.isArray(meals)) {
     return { ok: false, problem: validationProblem(["invalid_meals"]) };
@@ -155,6 +161,23 @@ export async function restoreBackup(
     }
   }
 
+  // Recipe presets are optional too (older backups carry none).
+  const cleanRecipes: Recipe[] = [];
+  if (recipes !== undefined) {
+    if (!Array.isArray(recipes)) {
+      errors.push("invalid_recipes");
+    } else {
+      for (const [index, raw] of recipes.entries()) {
+        const result = validateRecipe(raw, seed, index);
+        if (result.errors.length > 0) {
+          errors.push(...result.errors);
+        } else if (result.recipe) {
+          cleanRecipes.push(result.recipe);
+        }
+      }
+    }
+  }
+
   let cleanProfile: StoredProfile | null = null;
   if (profile !== null && profile !== undefined) {
     cleanProfile = validateProfile(profile);
@@ -171,10 +194,54 @@ export async function restoreBackup(
   await saveMeals(cleanMeals);
   await saveSupplements(cleanSupplements);
   await saveSupplementProducts(cleanProducts);
+  await saveRecipes(cleanRecipes);
   if (cleanProfile) {
     await saveProfile(cleanProfile);
   }
   return { ok: true, restored: cleanMeals.length };
+}
+
+function validateRecipe(
+  raw: unknown,
+  seed: Seed,
+  index: number,
+): { errors: string[]; recipe?: Recipe } {
+  if (typeof raw !== "object" || raw === null) {
+    return { errors: [`recipe_${index}_invalid`] };
+  }
+  const { recipe_id, name, items, created_at } = raw as Record<
+    string,
+    unknown
+  >;
+  const errors: string[] = [];
+  if (typeof recipe_id !== "string" || recipe_id === "") {
+    errors.push(`recipe_${index}_id`);
+  }
+  if (typeof name !== "string" || name === "") {
+    errors.push(`recipe_${index}_name`);
+  }
+  if (typeof created_at !== "string") {
+    errors.push(`recipe_${index}_created_at`);
+  }
+  const itemErrors = validateItems(items, seed);
+  if (itemErrors.length > 0) {
+    errors.push(...itemErrors.map((code) => `recipe_${index}_${code}`));
+  }
+  if (errors.length > 0) {
+    return { errors };
+  }
+  return {
+    errors: [],
+    recipe: {
+      recipe_id: recipe_id as string,
+      name: name as string,
+      created_at: created_at as string,
+      items: (items as { food_id: string; intake_g: number }[]).map((item) => ({
+        food_id: item.food_id,
+        intake_g: item.intake_g,
+      })),
+    },
+  };
 }
 
 function validateSupplement(

@@ -8,6 +8,7 @@ import type {
   UsualFoodsResponse,
 } from "../../server/api/handlers/getUsualFoods";
 import type { DayMeal } from "../../server/api/handlers/listDayMeals";
+import type { RecipeView } from "../../server/api/handlers/listRecipes";
 import type { MealType } from "../../server/api/schemas/meals";
 import { FoodSearchBox, type DraftItem } from "../food-search/FoodSearchBox";
 import { NutrientFinder } from "../food-search/NutrientFinder";
@@ -40,6 +41,9 @@ export function MealEntryScreen() {
   );
   const [date, setDate] = useState<string>(todayIsoDate());
   const [savedMeals, setSavedMeals] = useState<readonly DayMeal[]>([]);
+  const [recipes, setRecipes] = useState<readonly RecipeView[]>([]);
+  const [recipeName, setRecipeName] = useState("");
+  const [savingRecipe, setSavingRecipe] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
   const [editItems, setEditItems] = useState<
@@ -58,11 +62,12 @@ export function MealEntryScreen() {
 
   const loadShortcuts = useCallback(async () => {
     try {
-      const [usualResponse, candidatesResponse, mealsResponse] =
+      const [usualResponse, candidatesResponse, mealsResponse, recipesResponse] =
         await Promise.all([
           fetch(`/api/meals/usual?meal_type=${mealType}&date=${date}`),
           fetch(`/api/analysis/candidates?date=${date}`),
           fetch(`/api/meals?date=${date}`),
+          fetch(`/api/recipes`),
         ]);
       if (usualResponse.ok) {
         setUsual((await usualResponse.json()) as UsualFoodsResponse);
@@ -75,6 +80,10 @@ export function MealEntryScreen() {
       if (mealsResponse.ok) {
         const data = (await mealsResponse.json()) as { meals: DayMeal[] };
         setSavedMeals(data.meals);
+      }
+      if (recipesResponse.ok) {
+        const data = (await recipesResponse.json()) as { recipes: RecipeView[] };
+        setRecipes(data.recipes);
       }
     } catch {
       // shortcuts are supplementary — search and save still work
@@ -203,6 +212,66 @@ export function MealEntryScreen() {
   const handleAdd = (item: DraftItem) => {
     setDraftItems([...draftItems, item]);
     setSaveState("idle");
+  };
+
+  // Log a saved recipe: append all its foods to the current draft (one tap).
+  // Never auto-saves — the user reviews grams / meal type, then saves.
+  const handleAddRecipe = (recipe: RecipeView) => {
+    setDraftItems((prev) => [
+      ...prev,
+      ...recipe.items.map((item) => ({
+        foodId: item.food_id,
+        displayName: item.display_name,
+        intakeG: item.intake_g,
+        estimatedKcal: item.estimated_kcal,
+      })),
+    ]);
+    setSaveState("idle");
+  };
+
+  // Register the current draft as a reusable recipe (food_id + grams only;
+  // nutrition is recomputed from the seed whenever it is shown or logged).
+  const canSaveRecipe =
+    draftItems.length > 0 && recipeName.trim() !== "" && !savingRecipe;
+  const handleSaveRecipe = async () => {
+    if (!canSaveRecipe) {
+      return;
+    }
+    setSavingRecipe(true);
+    try {
+      const response = await fetch("/api/recipes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: recipeName.trim(),
+          items: draftItems.map((item) => ({
+            food_id: item.foodId,
+            intake_g: item.intakeG,
+          })),
+        }),
+      });
+      if (response.ok) {
+        setRecipeName("");
+        void loadShortcuts();
+      }
+    } catch {
+      // keep the draft as-is so the user can retry
+    } finally {
+      setSavingRecipe(false);
+    }
+  };
+
+  const handleDeleteRecipe = async (recipeId: string) => {
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        void loadShortcuts();
+      }
+    } catch {
+      // list stays as-is; the user can retry
+    }
   };
 
   const handleRemove = (index: number) => {
@@ -342,6 +411,46 @@ export function MealEntryScreen() {
         </section>
       )}
 
+      {recipes.length > 0 && (
+        <section style={{ marginTop: "24px" }}>
+          <h2 style={styles.sectionTitle}>
+            料理から追加
+            <span style={styles.sectionHint}>（登録した料理をまとめて追加）</span>
+          </h2>
+          <ul style={styles.shortcutList}>
+            {recipes.map((recipe) => (
+              <li key={recipe.recipe_id} style={styles.shortcutRow}>
+                <span style={{ flex: 1 }}>
+                  {recipe.name}
+                  <span style={styles.subtext}>
+                    {" "}
+                    {recipe.items.length}品
+                    {recipe.estimated_kcal !== null &&
+                      ` · 約 ${Math.round(recipe.estimated_kcal)} kcal`}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleAddRecipe(recipe)}
+                  aria-label={`${recipe.name}を追加`}
+                  style={styles.shortcutAdd}
+                >
+                  ＋追加
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleDeleteRecipe(recipe.recipe_id)}
+                  aria-label={`${recipe.name}を削除`}
+                  style={styles.deleteButton}
+                >
+                  削除
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {candidates !== null &&
         candidates.has_analysis &&
         candidates.candidates.length > 0 && (
@@ -418,6 +527,35 @@ export function MealEntryScreen() {
               </li>
             ))}
           </ul>
+        )}
+        {draftItems.length > 0 && (
+          <div style={styles.recipeSaveBox}>
+            <p style={styles.subtext}>
+              この内容を料理として登録すると、次回から名前でまとめて追加できます。
+            </p>
+            <div style={styles.recipeSaveRow}>
+              <input
+                type="text"
+                value={recipeName}
+                onChange={(event) => setRecipeName(event.target.value)}
+                placeholder="料理名（例: いつもの朝食）"
+                maxLength={100}
+                aria-label="料理名"
+                style={styles.recipeNameInput}
+              />
+              <button
+                type="button"
+                onClick={() => void handleSaveRecipe()}
+                disabled={!canSaveRecipe}
+                style={{
+                  ...styles.shortcutAdd,
+                  opacity: canSaveRecipe ? 1 : 0.5,
+                }}
+              >
+                料理として登録
+              </button>
+            </div>
+          </div>
         )}
       </section>
 
@@ -760,6 +898,29 @@ const styles = {
     fontSize: "14px",
     fontWeight: 700,
     cursor: "pointer",
+  },
+  recipeSaveBox: {
+    marginTop: "12px",
+    paddingTop: "12px",
+    borderTop: "1px solid var(--color-surface)",
+  },
+  recipeSaveRow: {
+    display: "flex",
+    gap: "8px",
+    alignItems: "center",
+    marginTop: "8px",
+  },
+  recipeNameInput: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: "var(--tap-target-min)",
+    padding: "0 12px",
+    border: "1px solid var(--color-primary)",
+    borderRadius: "8px",
+    background: "var(--color-base)",
+    color: "var(--color-text)",
+    fontSize: "16px",
+    boxSizing: "border-box" as const,
   },
   draftList: { listStyle: "none", margin: 0, padding: 0 },
   draftRow: {
