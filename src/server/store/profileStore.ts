@@ -1,7 +1,8 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { isValidBirthDate } from "../../domain/reference/ageBand";
 import type { AgeBand, Sex } from "../../domain/reference/types";
+import { writeJsonObject } from "./jsonArrayStore";
 
 /**
  * MVP persistence for the local reference-demographic setting
@@ -54,12 +55,11 @@ export async function readProfile(): Promise<StoredProfile | null> {
 }
 
 export async function writeProfile(profile: StoredProfile): Promise<void> {
-  await mkdir(dataDir(), { recursive: true });
   const payload: Record<string, string> = { sex: profile.sex };
   if (profile.birthDate) {
     payload.birthDate = profile.birthDate;
   } else if (profile.ageBand) {
     payload.ageBand = profile.ageBand;
   }
-  await writeFile(profileFile(), JSON.stringify(payload, null, 2), "utf-8");
+  await writeJsonObject(profileFile(), payload);
 }
