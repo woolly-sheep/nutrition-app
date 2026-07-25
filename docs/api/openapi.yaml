@@ -58,6 +58,13 @@ paths:
           required: true
           schema: { type: string }
           description: 対象の栄養素コード（選択可能な栄養素のみ）。
+        - name: scope
+          in: query
+          required: false
+          schema: { type: string, enum: [all, history], default: all }
+          description: |
+            all=全食品カタログ。history=過去1年に記録した食材のみ
+            （提案が実際に食べられる食材に限られる・issue #28）。
       responses:
         "200":
           description: 含有量の多い順の食品（上限あり）。推奨ではない旨の notice 付き。
@@ -636,9 +643,13 @@ components:
 
     RichFoodsResponse:
       type: object
-      required: [nutrient_code, foods, notice]
+      required: [nutrient_code, scope, foods, notice]
       properties:
         nutrient_code: { type: string }
+        scope:
+          type: string
+          enum: [all, history]
+          description: all=全食品 / history=過去1年に食べた食材のみ。
         foods:
           type: array
           items: { $ref: "#/components/schemas/RichFoodItem" }

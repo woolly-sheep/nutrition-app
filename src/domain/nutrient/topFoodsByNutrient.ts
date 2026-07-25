@@ -42,6 +42,7 @@ export function topFoodsByNutrient(
   seed: Seed,
   nutrientCode: string,
   limit = 30,
+  allowedFoodIds?: ReadonlySet<string>,
 ): RichFoodItem[] {
   if (!SELECTABLE_CODES.has(nutrientCode)) {
     return [];
@@ -55,7 +56,10 @@ export function topFoodsByNutrient(
     if (
       row.nutrient_code === nutrientCode &&
       typeof row.amount_per_100g === "number" &&
-      row.amount_per_100g > 0
+      row.amount_per_100g > 0 &&
+      // When a set is given, rank only foods the user has actually eaten
+      // (history scope). Undefined = whole catalog.
+      (allowedFoodIds === undefined || allowedFoodIds.has(row.food_id))
     ) {
       items.push({
         food_id: row.food_id,

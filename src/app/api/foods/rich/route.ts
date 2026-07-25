@@ -1,9 +1,15 @@
 // Thin HTTP entrypoint. Implementation lives in src/server/api/handlers.
 
 import { NextResponse } from "next/server";
-import { richFoods } from "../../../../server/api/handlers/richFoods";
+import {
+  richFoods,
+  type RichFoodsScope,
+} from "../../../../server/api/handlers/richFoods";
 
 export async function GET(request: Request) {
-  const nutrient = new URL(request.url).searchParams.get("nutrient") ?? "";
-  return NextResponse.json(richFoods(nutrient));
+  const params = new URL(request.url).searchParams;
+  const nutrient = params.get("nutrient") ?? "";
+  const scope: RichFoodsScope =
+    params.get("scope") === "history" ? "history" : "all";
+  return NextResponse.json(await richFoods(nutrient, scope));
 }
