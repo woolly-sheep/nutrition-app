@@ -6,32 +6,44 @@ import type { MealRecord } from "../schemas/meals";
 import {
   DATA_SOURCES,
   type ContributionFoodItem,
+  type ContributionWindow,
   type NutrientContributionResponse,
 } from "../schemas/analysis";
 
 export const CONTRIBUTION_NOTICE =
   "出典: 食品成分表(八訂)。記録した食品の含有量に基づく内訳の推定です。";
 
+export const CONTRIBUTION_YEAR_NOTICE =
+  "出典: 食品成分表(八訂)。過去1年に記録した食品の含有量に基づく内訳の推定です。";
+
+/** The "year" window looks back this many days, inclusive of `date`. */
+export const CONTRIBUTION_YEAR_DAYS = 365;
+
 type Dependencies = {
   seed?: Seed;
-  loadMeals?: (date: string) => Promise<MealRecord[]>;
+  loadMeals?: (date?: string) => Promise<MealRecord[]>;
 };
 
 /**
- * For one nutrient, which recorded foods contributed it today
- * (dashboard insight ②). Facts from the user's own records — the
- * food-derived share only, largest first. No profile / reference needed:
- * this explains where intake came from, it does not judge sufficiency.
- * Never log the food contents here (logging allowlist).
+ * For one nutrient, which recorded foods contributed it (dashboard insight ②).
+ * window="day" explains a single date's intake (where a shortfall came from);
+ * window="year" aggregates the trailing 365 days ending at `date`, so an
+ * over-consumed nutrient's habitual food sources surface (issue #28 ①).
+ * Facts from the user's own records — food-derived share only, largest first.
+ * No judgment. Never log the food contents here (logging allowlist).
  */
 export async function getNutrientContribution(
   date: string,
   nutrientCode: string,
+  window: ContributionWindow = "day",
   { seed = loadSeed(), loadMeals = listMeals }: Dependencies = {},
 ): Promise<NutrientContributionResponse> {
   const meta = nutrientMeta(nutrientCode, seed);
+  const notice =
+    window === "year" ? CONTRIBUTION_YEAR_NOTICE : CONTRIBUTION_NOTICE;
   const empty: NutrientContributionResponse = {
     date,
+    window,
     nutrient_code: nutrientCode,
     nutrient_name: meta.name,
     unit: meta.unit,
@@ -40,11 +52,14 @@ export async function getNutrientContribution(
     foods: [],
     other_amount: 0,
     other_percent: 0,
-    notice: CONTRIBUTION_NOTICE,
+    notice,
     sources: DATA_SOURCES,
   };
 
-  const meals = await loadMeals(date);
+  const meals =
+    window === "year"
+      ? withinYear(await loadMeals(), date)
+      : await loadMeals(date);
   const items = meals.flatMap((meal) =>
     meal.items.map((item) => ({
       foodId: item.food_id,
@@ -70,6 +85,7 @@ export async function getNutrientContribution(
 
   return {
     date,
+    window,
     nutrient_code: nutrientCode,
     nutrient_name: meta.name,
     unit: meta.unit,
@@ -78,9 +94,23 @@ export async function getNutrientContribution(
     foods,
     other_amount: contribution.otherAmount,
     other_percent: contribution.otherPercent,
-    notice: CONTRIBUTION_NOTICE,
+    notice,
     sources: DATA_SOURCES,
   };
+}
+
+/** Meals dated within the trailing 365 days ending at `endDate` (inclusive). */
+function withinYear(
+  meals: readonly MealRecord[],
+  endDate: string,
+): MealRecord[] {
+  const end = new Date(`${endDate}T00:00:00Z`);
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - (CONTRIBUTION_YEAR_DAYS - 1));
+  const startIso = start.toISOString().slice(0, 10);
+  return meals.filter(
+    (meal) => meal.date >= startIso && meal.date <= endDate,
+  );
 }
 
 function nutrientMeta(
