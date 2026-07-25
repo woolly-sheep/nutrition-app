@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { HeatmapCell } from "../../components/HeatmapCell";
 import type { WeeklyAnalysisResponse } from "../../server/api/schemas/analysis";
+import { ContributionPanel } from "./ContributionPanel";
 
 /**
  * 週次: 充足率レポート / バランスマップ (5c + 6c). Days without records
@@ -22,6 +23,8 @@ export function WeeklyReport({ date }: Props) {
   // (today for the current week, that week's Sunday for past weeks)
   const [anchor, setAnchor] = useState(date);
   const [data, setData] = useState<WeeklyAnalysisResponse | null>(null);
+  // Which nutrient row is expanded to its food breakdown (issue #44).
+  const [expandedCode, setExpandedCode] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -133,19 +136,47 @@ export function WeeklyReport({ date }: Props) {
             </tr>
           </thead>
           <tbody>
-            {data.nutrients.map((nutrient) => (
-              <tr key={nutrient.nutrient_code}>
-                <th style={styles.nameCell} scope="row">
-                  {nutrient.nutrient_name}
-                </th>
-                {nutrient.daily.map((cell) => (
-                  <HeatmapCell key={cell.date} percent={cell.percent} />
-                ))}
-                <td style={styles.averageCell}>
-                  {Math.round(nutrient.average_percent)}
-                </td>
-              </tr>
-            ))}
+            {data.nutrients.map((nutrient) => {
+              const isOpen = expandedCode === nutrient.nutrient_code;
+              return (
+                <Fragment key={nutrient.nutrient_code}>
+                  <tr>
+                    <th style={styles.nameCell} scope="row">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedCode(isOpen ? null : nutrient.nutrient_code)
+                        }
+                        aria-expanded={isOpen}
+                        style={styles.nameButton}
+                      >
+                        {nutrient.nutrient_name}
+                        <span aria-hidden="true" style={styles.caret}>
+                          {isOpen ? "▼" : "▸"}
+                        </span>
+                      </button>
+                    </th>
+                    {nutrient.daily.map((cell) => (
+                      <HeatmapCell key={cell.date} percent={cell.percent} />
+                    ))}
+                    <td style={styles.averageCell}>
+                      {Math.round(nutrient.average_percent)}
+                    </td>
+                  </tr>
+                  {isOpen && (
+                    <tr>
+                      <td colSpan={dayCount + 2} style={{ padding: 0 }}>
+                        <ContributionPanel
+                          date={date}
+                          nutrientCode={nutrient.nutrient_code}
+                          nutrientName={nutrient.nutrient_name}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -247,6 +278,22 @@ const styles = {
     padding: "6px 4px",
     whiteSpace: "nowrap",
   },
+  nameButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "4px",
+    minHeight: "var(--tap-target-min)",
+    padding: 0,
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    font: "inherit",
+    fontSize: "12px",
+    fontWeight: 500,
+    color: "var(--color-text)",
+    whiteSpace: "nowrap",
+  },
+  caret: { color: "var(--color-subtext)", fontSize: "10px" },
   dayHeader: {
     fontSize: "11px",
     fontWeight: 400,
