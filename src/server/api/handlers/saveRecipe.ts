@@ -22,6 +22,24 @@ export async function saveRecipe(
   seed: Seed = loadSeed(),
   save: (input: CreateRecipeRequest) => Promise<Recipe> = appendRecipe,
 ): Promise<SaveRecipeResult> {
+  const validated = validateRecipeBody(body, seed);
+  if (!validated.ok) {
+    return validated;
+  }
+  const recipe = await save(validated.value);
+  return { ok: true, recipe };
+}
+
+type ValidatedRecipe =
+  | { ok: true; value: CreateRecipeRequest }
+  | { ok: false; problem: ProblemDetails };
+
+/**
+ * Shared validation for the create and edit paths. The dish name is user data,
+ * so failures return field codes only (never the name); items reuse the meal
+ * item rules (known seed food, positive grams, item caps).
+ */
+export function validateRecipeBody(body: unknown, seed: Seed): ValidatedRecipe {
   if (typeof body !== "object" || body === null) {
     return { ok: false, problem: validationProblem(["invalid_body"]) };
   }
@@ -41,12 +59,14 @@ export async function saveRecipe(
     return { ok: false, problem: validationProblem(errors) };
   }
 
-  const recipe = await save({
-    name: (name as string).trim(),
-    items: (items as CreateRecipeRequest["items"]).map((item) => ({
-      food_id: item.food_id,
-      intake_g: item.intake_g,
-    })),
-  });
-  return { ok: true, recipe };
+  return {
+    ok: true,
+    value: {
+      name: (name as string).trim(),
+      items: (items as CreateRecipeRequest["items"]).map((item) => ({
+        food_id: item.food_id,
+        intake_g: item.intake_g,
+      })),
+    },
+  };
 }

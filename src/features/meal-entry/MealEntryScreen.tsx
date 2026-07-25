@@ -13,6 +13,7 @@ import type { MealType } from "../../server/api/schemas/meals";
 import { FoodSearchBox, type DraftItem } from "../food-search/FoodSearchBox";
 import { NutrientFinder } from "../food-search/NutrientFinder";
 import { SupplementPanel } from "./SupplementPanel";
+import { RecipeSection } from "./RecipeSection";
 
 /**
  * 記録 tab (UI design v0.1 §4.2 + v0.3 addendum). Search + grams input +
@@ -214,18 +215,10 @@ export function MealEntryScreen() {
     setSaveState("idle");
   };
 
-  // Log a saved recipe: append all its foods to the current draft (one tap).
-  // Never auto-saves — the user reviews grams / meal type, then saves.
-  const handleAddRecipe = (recipe: RecipeView) => {
-    setDraftItems((prev) => [
-      ...prev,
-      ...recipe.items.map((item) => ({
-        foodId: item.food_id,
-        displayName: item.display_name,
-        intakeG: item.intake_g,
-        estimatedKcal: item.estimated_kcal,
-      })),
-    ]);
+  // Log a saved recipe: append its (servings-scaled) foods to the current
+  // draft. Never auto-saves — the user reviews grams / meal type, then saves.
+  const handleAddRecipeItems = (items: DraftItem[]) => {
+    setDraftItems((prev) => [...prev, ...items]);
     setSaveState("idle");
   };
 
@@ -261,18 +254,6 @@ export function MealEntryScreen() {
     }
   };
 
-  const handleDeleteRecipe = async (recipeId: string) => {
-    try {
-      const response = await fetch(`/api/recipes/${recipeId}`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        void loadShortcuts();
-      }
-    } catch {
-      // list stays as-is; the user can retry
-    }
-  };
 
   const handleRemove = (index: number) => {
     setDraftItems(draftItems.filter((_, i) => i !== index));
@@ -411,45 +392,11 @@ export function MealEntryScreen() {
         </section>
       )}
 
-      {recipes.length > 0 && (
-        <section style={{ marginTop: "24px" }}>
-          <h2 style={styles.sectionTitle}>
-            料理から追加
-            <span style={styles.sectionHint}>（登録した料理をまとめて追加）</span>
-          </h2>
-          <ul style={styles.shortcutList}>
-            {recipes.map((recipe) => (
-              <li key={recipe.recipe_id} style={styles.shortcutRow}>
-                <span style={{ flex: 1 }}>
-                  {recipe.name}
-                  <span style={styles.subtext}>
-                    {" "}
-                    {recipe.items.length}品
-                    {recipe.estimated_kcal !== null &&
-                      ` · 約 ${Math.round(recipe.estimated_kcal)} kcal`}
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleAddRecipe(recipe)}
-                  aria-label={`${recipe.name}を追加`}
-                  style={styles.shortcutAdd}
-                >
-                  ＋追加
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleDeleteRecipe(recipe.recipe_id)}
-                  aria-label={`${recipe.name}を削除`}
-                  style={styles.deleteButton}
-                >
-                  削除
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <RecipeSection
+        recipes={recipes}
+        onAddToDraft={handleAddRecipeItems}
+        onChanged={() => void loadShortcuts()}
+      />
 
       {candidates !== null &&
         candidates.has_analysis &&
