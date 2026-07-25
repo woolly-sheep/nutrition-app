@@ -845,6 +845,42 @@ components:
                   meal_type: { type: string }
                   amount: { type: number }
 
+    FocusNutrientItem:
+      type: object
+      description: |
+        重点栄養素ボード（#34）の1行。direction で表示が決まる:
+        gain=最小値までのメーター（食物繊維・カリウム）、
+        balance=%E をレンジ上に配置（たんぱく質・脂質・炭水化物、value は %E・null=当日エネルギー不明）、
+        limit=上限までのメーター（食塩相当量）。
+        「重点」＝食事摂取基準(2025)が目標量(DG)を定めた栄養素。事実のみ・label は SafeWordingService。
+      required: [nutrient_code, nutrient_name, unit, direction, status, label, value, goal_value, fill_ratio, reached, remaining]
+      properties:
+        nutrient_code: { type: string }
+        nutrient_name: { type: string }
+        unit: { type: string }
+        direction: { type: string, enum: [gain, balance, limit] }
+        status: { type: string }
+        label: { type: string }
+        value:
+          oneOf:
+            - type: number
+            - type: "null"
+        goal_value:
+          oneOf:
+            - type: number
+            - type: "null"
+        range_min: { type: number }
+        range_max: { type: number }
+        fill_ratio:
+          oneOf:
+            - type: number
+            - type: "null"
+        reached: { type: boolean }
+        remaining:
+          oneOf:
+            - type: number
+            - type: "null"
+
     DailyAnalysisResponse:
       type: object
       required: [date, profile, profile_required, has_records, summary, warning_codes, disclaimer, sources]
@@ -862,7 +898,7 @@ components:
           oneOf:
             - type: "null"
             - type: object
-              required: [achieved, insufficient, comparable_count, at_least_80_count, within_goal_count, ul_reached, dg_over]
+              required: [achieved, insufficient, comparable_count, at_least_80_count, within_goal_count, ul_reached, dg_over, focus_nutrients]
               properties:
                 achieved:
                   type: array
@@ -879,6 +915,9 @@ components:
                 dg_over:
                   type: array
                   items: { $ref: "#/components/schemas/AnalysisExceedanceItem" }
+                focus_nutrients:
+                  type: array
+                  items: { $ref: "#/components/schemas/FocusNutrientItem" }
         warning_codes:
           type: array
           items: { type: string }
