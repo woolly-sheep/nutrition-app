@@ -60,6 +60,31 @@ export async function appendSupplement(
   return record;
 }
 
+/**
+ * Replaces one record's product name and amounts. supplement_id, date and
+ * recorded_at stay untouched (the record keeps its original day and identity,
+ * same policy as editing a meal). Returns null when the id is unknown.
+ */
+export async function updateSupplementRecord(
+  id: string,
+  input: Pick<CreateSupplementRequest, "product_name" | "amounts">,
+): Promise<SupplementRecord | null> {
+  const records = await readAll();
+  const index = records.findIndex((r) => r.supplement_id === id);
+  if (index === -1) {
+    return null;
+  }
+  const updated: SupplementRecord = {
+    ...records[index],
+    product_name: input.product_name,
+    amounts: input.amounts,
+  };
+  const next = [...records];
+  next[index] = updated;
+  await writeAll(next);
+  return updated;
+}
+
 /** Returns true when a record was removed, false when the id was unknown. */
 export async function deleteSupplement(id: string): Promise<boolean> {
   const records = await readAll();

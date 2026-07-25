@@ -28,6 +28,24 @@ export async function saveSupplement(
     input: CreateSupplementRequest,
   ) => Promise<SupplementRecord> = appendSupplement,
 ): Promise<SaveSupplementResult> {
+  const validated = validateSupplementBody(body);
+  if (!validated.ok) {
+    return validated;
+  }
+  const supplement = await save(validated.value);
+  return { ok: true, supplement };
+}
+
+type ValidatedBody =
+  | { ok: true; value: CreateSupplementRequest }
+  | { ok: false; problem: ProblemDetails };
+
+/**
+ * Shared validation for the create and edit paths. Enforces the date /
+ * product-name / amounts rules and, on failure, returns field codes only so
+ * the submitted product name never leaks into an error body or log.
+ */
+export function validateSupplementBody(body: unknown): ValidatedBody {
   if (typeof body !== "object" || body === null) {
     return { ok: false, problem: validationProblem(["invalid_body"]) };
   }
@@ -50,12 +68,14 @@ export async function saveSupplement(
     return { ok: false, problem: validationProblem(errors) };
   }
 
-  const supplement = await save({
-    date: date as string,
-    product_name: (product_name as string).trim(),
-    amounts: clean,
-  });
-  return { ok: true, supplement };
+  return {
+    ok: true,
+    value: {
+      date: date as string,
+      product_name: (product_name as string).trim(),
+      amounts: clean,
+    },
+  };
 }
 
 function validateAmounts(

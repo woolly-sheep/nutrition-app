@@ -423,6 +423,35 @@ paths:
         "422": { $ref: "#/components/responses/ValidationProblem" }
 
   /api/supplements/{supplement_id}:
+    put:
+      tags: [supplements]
+      summary: サプリメント記録の編集（製品名・表示値を差し替え。日付は不変）
+      parameters:
+        - name: supplement_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateSupplementRequest" }
+      responses:
+        "200":
+          description: 更新後の記録。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [supplement]
+                properties:
+                  supplement: { $ref: "#/components/schemas/SupplementRecord" }
+        "404":
+          description: 指定 supplement_id が存在しない。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
     delete:
       tags: [supplements]
       summary: サプリメント記録の削除
