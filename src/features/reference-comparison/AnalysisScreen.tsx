@@ -20,6 +20,7 @@ import { AGE_BAND_LABELS, SEX_LABELS } from "../daily-summary/ProfileSetup";
 import { BackupPanel } from "../../components/BackupPanel";
 import { MonthGarden } from "../../components/MonthGarden";
 import { WeeklyReport } from "./WeeklyReport";
+import { ContributionPanel } from "./ContributionPanel";
 
 /**
  * 分析タブ・日次 (UI design v0.1 §4.3 + v0.2 addendum §3):
@@ -133,9 +134,10 @@ export function AnalysisScreen() {
 
       <section style={{ marginTop: "24px" }}>
         <h2 style={styles.sectionTitle}>基準値比較（推奨量・目安量）</h2>
+        <p style={styles.tapHint}>栄養素をタップすると食材別の内訳が開きます。</p>
         {data.has_supplements && <SplitLegend />}
         {bars.map((item) => (
-          <NutrientBarRow key={item.nutrient_code} item={item} />
+          <NutrientBarRow key={item.nutrient_code} item={item} date={data.date} />
         ))}
       </section>
 
@@ -206,14 +208,33 @@ export function AnalysisScreen() {
   );
 }
 
-function NutrientBarRow({ item }: { item: AnalysisNutrientItem }) {
+function NutrientBarRow({
+  item,
+  date,
+}: {
+  item: AnalysisNutrientItem;
+  date: string;
+}) {
   const percent = item.percent_of_reference ?? 0;
   const hasSupplement = item.supplement_amount > 0;
   const foodPercent = item.percent_of_reference_food ?? percent;
+  const [expanded, setExpanded] = useState(false);
+  const panelId = `contrib-${item.nutrient_code}`;
   return (
     <div style={{ marginBottom: "14px" }}>
-      <div style={styles.rowHeader}>
-        <span style={{ fontSize: "14px" }}>{item.nutrient_name}</span>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        style={styles.rowButton}
+      >
+        <span style={{ fontSize: "14px", display: "flex", alignItems: "center", gap: "4px" }}>
+          {item.nutrient_name}
+          <span aria-hidden="true" style={styles.caret}>
+            {expanded ? "▼" : "▸"}
+          </span>
+        </span>
         <span style={styles.rowFigures}>
           {formatAmount(item.intake_amount)} /{" "}
           {typeof item.reference_value === "number"
@@ -224,7 +245,7 @@ function NutrientBarRow({ item }: { item: AnalysisNutrientItem }) {
             item.remaining_amount > 0 &&
             ` · あと${formatAmount(item.remaining_amount)}${item.unit}`}
         </span>
-      </div>
+      </button>
       {hasSupplement ? (
         <>
           <SplitBar
@@ -243,6 +264,15 @@ function NutrientBarRow({ item }: { item: AnalysisNutrientItem }) {
           percent={percent}
           label={`${item.nutrient_name} ${Math.round(percent)}%`}
         />
+      )}
+      {expanded && (
+        <div id={panelId}>
+          <ContributionPanel
+            date={date}
+            nutrientCode={item.nutrient_code}
+            nutrientName={item.nutrient_name}
+          />
+        </div>
       )}
     </div>
   );
@@ -441,6 +471,28 @@ const styles = {
     alignItems: "baseline",
     gap: "8px",
     marginBottom: "4px",
+  },
+  rowButton: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    gap: "8px",
+    width: "100%",
+    minHeight: "var(--tap-target-min)",
+    marginBottom: "4px",
+    padding: "2px 0",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    textAlign: "left",
+    color: "var(--color-text)",
+    font: "inherit",
+  },
+  caret: { color: "var(--color-subtext)", fontSize: "10px" },
+  tapHint: {
+    fontSize: "12px",
+    color: "var(--color-subtext)",
+    margin: "0 0 10px",
   },
   rowFigures: { color: "var(--color-subtext)", fontSize: "12px" },
   noteCallout: {
