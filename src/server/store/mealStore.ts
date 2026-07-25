@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type {
   CreateMealRequest,
   MealRecord,
 } from "../api/schemas/meals";
+import { readJsonArray, writeJsonArray } from "./jsonArrayStore";
 
 /**
  * MVP persistence: a local JSON file (data/meals.json). Single-user,
@@ -80,16 +80,9 @@ export async function replaceAllMeals(
 }
 
 async function readAll(): Promise<MealRecord[]> {
-  try {
-    const raw = await readFile(mealsFile(), "utf-8");
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as MealRecord[]) : [];
-  } catch {
-    return [];
-  }
+  return readJsonArray<MealRecord>(mealsFile());
 }
 
 async function writeAll(meals: readonly MealRecord[]): Promise<void> {
-  await mkdir(dataDir(), { recursive: true });
-  await writeFile(mealsFile(), JSON.stringify(meals, null, 2), "utf-8");
+  await writeJsonArray(mealsFile(), meals);
 }

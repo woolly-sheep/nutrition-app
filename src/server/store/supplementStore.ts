@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type {
   CreateSupplementRequest,
   SupplementRecord,
 } from "../api/schemas/supplements";
+import { readJsonArray, writeJsonArray } from "./jsonArrayStore";
 
 /**
  * MVP persistence for self-reported supplements (data/supplements.json).
@@ -22,22 +22,11 @@ function supplementsFile(): string {
 }
 
 async function readAll(): Promise<SupplementRecord[]> {
-  try {
-    const raw = await readFile(supplementsFile(), "utf-8");
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as SupplementRecord[]) : [];
-  } catch {
-    return [];
-  }
+  return readJsonArray<SupplementRecord>(supplementsFile());
 }
 
 async function writeAll(records: readonly SupplementRecord[]): Promise<void> {
-  await mkdir(dataDir(), { recursive: true });
-  await writeFile(
-    supplementsFile(),
-    JSON.stringify(records, null, 2),
-    "utf-8",
-  );
+  await writeJsonArray(supplementsFile(), records);
 }
 
 export async function listSupplements(

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { CreateRecipeRequest, Recipe } from "../api/schemas/recipes";
+import { readJsonArray, writeJsonArray } from "./jsonArrayStore";
 
 /**
  * MVP persistence for recipe presets (data/recipes.json). Same lifecycle as
@@ -17,18 +17,11 @@ function recipesFile(): string {
 }
 
 async function readAll(): Promise<Recipe[]> {
-  try {
-    const raw = await readFile(recipesFile(), "utf-8");
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as Recipe[]) : [];
-  } catch {
-    return [];
-  }
+  return readJsonArray<Recipe>(recipesFile());
 }
 
 async function writeAll(records: readonly Recipe[]): Promise<void> {
-  await mkdir(dataDir(), { recursive: true });
-  await writeFile(recipesFile(), JSON.stringify(records, null, 2), "utf-8");
+  await writeJsonArray(recipesFile(), records);
 }
 
 export async function listRecipes(): Promise<Recipe[]> {
