@@ -9,6 +9,7 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const date = params.get("date") ?? "";
   const nutrient = params.get("nutrient") ?? "";
+  const window = params.get("window") === "year" ? "year" : "day";
   const errors: string[] = [];
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     errors.push("invalid_date");
@@ -20,5 +21,7 @@ export async function GET(request: Request) {
     const problem = validationProblem(errors);
     return NextResponse.json(problem, { status: problem.status });
   }
-  return NextResponse.json(await getNutrientContribution(date, nutrient));
+  return NextResponse.json(
+    await getNutrientContribution(date, nutrient, window),
+  );
 }

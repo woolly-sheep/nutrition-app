@@ -189,14 +189,19 @@ export type ContributionFoodItem = {
   percent: number;
 };
 
+/** "day" = a single date's intake; "year" = the trailing 365 days ending at date. */
+export type ContributionWindow = "day" | "year";
+
 export type NutrientContributionResponse = {
   date: string;
+  /** Which window the breakdown covers (default "day"). */
+  window: ContributionWindow;
   nutrient_code: string;
   nutrient_name: string;
   unit: string;
-  /** false when there are no records for this day. */
+  /** false when there are no records in the window. */
   has_records: boolean;
-  /** Total food-derived amount of this nutrient today. */
+  /** Total food-derived amount of this nutrient over the window. */
   total_amount: number;
   /** Top contributors, largest first. */
   foods: readonly ContributionFoodItem[];

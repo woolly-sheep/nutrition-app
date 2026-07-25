@@ -275,12 +275,14 @@ paths:
   /api/analysis/contribution:
     get:
       tags: [analysis]
-      summary: 栄養素の寄与度（当日・食品別の内訳）
+      summary: 栄養素の寄与度（食品別の内訳・当日 or 過去1年）
       description: |
-        指定した栄養素について、当日記録した食品ごとの寄与（公式含有量×g）を
+        指定した栄養素について、記録した食品ごとの寄与（公式含有量×g）を
         大きい順に返す。食品由来分のみの事実提示で、摂取の推奨ではない。
-        記録なしの日は has_records=false・foods 0 件（正常系）。
-        応答には必ず notice（出典・推定である旨）を含む。
+        window=day（既定）は当日の内訳（不足がどこから来たか）、
+        window=year は date を末日とする過去365日の集計（過剰摂取の原因＝
+        習慣的な食材の把握・issue #28①）。記録なしは has_records=false・
+        foods 0 件（正常系）。応答には必ず notice（出典・推定である旨）を含む。
       parameters:
         - name: date
           in: query
@@ -290,6 +292,11 @@ paths:
           in: query
           required: true
           schema: { type: string, pattern: "^[a-z0-9_]+$" }
+        - name: window
+          in: query
+          required: false
+          schema: { type: string, enum: [day, year], default: day }
+          description: day=当日 / year=date を末日とする過去365日の集計。
       responses:
         "200":
           description: 食品別の寄与（0件も正常系）。
@@ -1010,16 +1017,20 @@ components:
 
     NutrientContributionResponse:
       type: object
-      required: [date, nutrient_code, nutrient_name, unit, has_records, total_amount, foods, other_amount, other_percent, notice, sources]
+      required: [date, window, nutrient_code, nutrient_name, unit, has_records, total_amount, foods, other_amount, other_percent, notice, sources]
       properties:
         date: { type: string, format: date }
+        window:
+          type: string
+          enum: [day, year]
+          description: day=当日 / year=過去365日集計。
         nutrient_code: { type: string }
         nutrient_name: { type: string }
         unit: { type: string }
         has_records: { type: boolean }
         total_amount:
           type: number
-          description: 当日の食品由来の合計量。
+          description: 対象ウィンドウの食品由来の合計量。
         foods:
           type: array
           description: 寄与の大きい食品から順。

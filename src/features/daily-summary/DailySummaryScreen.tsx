@@ -7,7 +7,6 @@ import { BloomFlower } from "../../components/BloomFlower";
 import { EmptyState } from "../../components/EmptyState";
 import { FocusNutrients } from "../../components/FocusNutrients";
 import { WeekGarden } from "../../components/WeekGarden";
-import { formatAmount } from "../../components/RemainingCard";
 import { SourceFooter } from "../../components/SourceFooter";
 import { buildBloomModel } from "../../domain/analysis/nutrientGroups";
 import { buildDailyHeadline } from "../../domain/analysis/summaryHeadline";
@@ -19,6 +18,7 @@ import type {
 import type { FoodCandidatesResponse } from "../../server/api/handlers/getFoodCandidates";
 import { AGE_BAND_LABELS, ProfileSetup, SEX_LABELS } from "./ProfileSetup";
 import { ShortfallRow } from "./ShortfallRow";
+import { OverCauseRow } from "./OverCauseRow";
 
 /**
  * Home daily summary — 栄養バランスの花 (UI redesign 2026-07-22):
@@ -206,21 +206,16 @@ export function DailySummaryScreen() {
       {watchItems.length > 0 && (
         <section style={styles.watchSection}>
           <h2 style={styles.sectionTitle}>気をつけたい</h2>
-          {watchItems.map(({ item, kind }) => {
-            const isEnergyRatio = item.unit === "%E";
-            return (
-              <div key={`${kind}-${item.nutrient_code}`} style={styles.watchRow}>
-                <span style={{ fontSize: "14px" }}>{item.nutrient_name}</span>
-                <span style={{ fontSize: "13px", color: "var(--color-subtext)" }}>
-                  {kind === "ul" ? "上限" : isEnergyRatio ? "目標範囲" : "目標"}より +
-                  {formatAmount(item.over_amount)}
-                  {isEnergyRatio ? "pt" : item.unit}（推定）
-                </span>
-              </div>
-            );
-          })}
+          {watchItems.map(({ item, kind }) => (
+            <OverCauseRow
+              key={`${kind}-${item.nutrient_code}`}
+              item={item}
+              kind={kind}
+              date={data.date}
+            />
+          ))}
           <Link href={`/analysis`} style={styles.watchLink}>
-            分析タブで内訳を見る →
+            分析タブで詳しく見る →
           </Link>
         </section>
       )}
@@ -288,13 +283,6 @@ const styles = {
     padding: "14px 16px",
     background: "var(--color-surface)",
     borderRadius: "12px",
-  },
-  watchRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "baseline",
-    gap: "8px",
-    padding: "5px 0",
   },
   watchLink: {
     display: "inline-flex",
