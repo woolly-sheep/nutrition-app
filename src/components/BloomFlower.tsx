@@ -9,8 +9,15 @@ import type { PetalValue } from "../domain/analysis/nutrientGroups";
  * (progressive disclosure) — the flower is the emotional layer only.
  */
 
-const CENTER = 120;
-const CENTER_Y = 115;
+// Layout: the viewBox is deliberately larger than the flower so labels sit in
+// a ring OUTSIDE the petals with margin on every side. Petal tips reach radius
+// (20 + 2*ry_max) = 104 from the centre; labels are placed at LABEL_R = 116 so
+// a fully bloomed petal never covers or overruns its label (issue #41).
+const VIEW_W = 300;
+const VIEW_H = 264;
+const CENTER = 150;
+const CENTER_Y = 132;
+const LABEL_R = 116;
 const ANGLES = [0, 60, 120, 180, 240, 300];
 const RX = 13;
 const MIN_RY = 14;
@@ -25,9 +32,11 @@ type Props = {
 export function BloomFlower({ petals, overall }: Props) {
   return (
     <svg
-      width="248"
-      height="238"
-      viewBox="0 0 240 230"
+      width={VIEW_W}
+      height={VIEW_H}
+      viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+      // Scale to the container and never overflow it horizontally.
+      style={{ width: "100%", maxWidth: VIEW_W, height: "auto" }}
       role="img"
       aria-label={ariaLabel(petals, overall)}
     >
@@ -128,8 +137,8 @@ export function BloomFlower({ petals, overall }: Props) {
       {petals.map((petal, i) => {
         const angle = ANGLES[i] ?? 0;
         const rad = (angle * Math.PI) / 180;
-        const x = CENTER + 96 * Math.sin(rad);
-        const y = CENTER_Y - 96 * Math.cos(rad);
+        const x = CENTER + LABEL_R * Math.sin(rad);
+        const y = CENTER_Y - LABEL_R * Math.cos(rad);
         return (
           <text
             key={`label-${petal.key}`}
