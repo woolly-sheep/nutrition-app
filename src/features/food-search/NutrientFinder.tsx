@@ -17,30 +17,45 @@ type Props = {
   onAdd: (item: DraftItem) => void;
 };
 
+type Scope = "all" | "history";
+
 export function NutrientFinder({ onAdd }: Props) {
   const [code, setCode] = useState("");
+  const [scope, setScope] = useState<Scope>("all");
   const [foods, setFoods] = useState<readonly RichFoodItem[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
 
-  const handleSelect = async (nextCode: string) => {
-    setCode(nextCode);
+  const runSearch = async (nextCode: string, nextScope: Scope) => {
     if (nextCode === "") {
       setFoods([]);
       setNotice(null);
+      setSearched(false);
       return;
     }
     try {
       const response = await fetch(
-        `/api/foods/rich?nutrient=${encodeURIComponent(nextCode)}`,
+        `/api/foods/rich?nutrient=${encodeURIComponent(nextCode)}&scope=${nextScope}`,
       );
       if (response.ok) {
         const data = (await response.json()) as RichFoodsResponse;
         setFoods(data.foods);
         setNotice(data.notice);
+        setSearched(true);
       }
     } catch {
       // finder is supplementary — the main search still works
     }
+  };
+
+  const handleSelect = (nextCode: string) => {
+    setCode(nextCode);
+    void runSearch(nextCode, scope);
+  };
+
+  const handleScope = (nextScope: Scope) => {
+    setScope(nextScope);
+    void runSearch(code, nextScope);
   };
 
   return (
@@ -51,7 +66,7 @@ export function NutrientFinder({ onAdd }: Props) {
       <select
         id="nutrient-finder"
         value={code}
-        onChange={(event) => void handleSelect(event.target.value)}
+        onChange={(event) => handleSelect(event.target.value)}
         style={styles.select}
       >
         <option value="">栄養素を選ぶ…</option>
@@ -61,6 +76,38 @@ export function NutrientFinder({ onAdd }: Props) {
           </option>
         ))}
       </select>
+
+      <div role="group" aria-label="対象" style={styles.scopeRow}>
+        {(
+          [
+            ["all", "全食品"],
+            ["history", "食べた食材から"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => handleScope(value)}
+            aria-pressed={scope === value}
+            style={{
+              ...styles.scopeButton,
+              background:
+                scope === value ? "var(--color-primary)" : "var(--color-base)",
+              color:
+                scope === value ? "var(--color-base)" : "var(--color-subtext)",
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {searched && foods.length === 0 && scope === "history" && (
+        <p style={styles.notice}>
+          この栄養素を含む食材は、過去1年の記録にありません。「全食品」で探すか、
+          記録を増やすと表示されます。
+        </p>
+      )}
 
       {foods.length > 0 && (
         <ul style={styles.list}>
@@ -114,6 +161,16 @@ const styles = {
     fontSize: "16px",
     background: "var(--color-base)",
     color: "var(--color-text)",
+  },
+  scopeRow: { display: "flex", gap: "8px", marginTop: "8px" },
+  scopeButton: {
+    minHeight: "var(--tap-target-min)",
+    flex: 1,
+    border: "1px solid var(--color-primary)",
+    borderRadius: "8px",
+    fontSize: "13px",
+    fontWeight: 700,
+    cursor: "pointer",
   },
   list: { listStyle: "none", margin: "8px 0 0", padding: 0 },
   row: {
