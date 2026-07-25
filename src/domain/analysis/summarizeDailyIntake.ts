@@ -57,18 +57,37 @@ const INTAKE_REFERENCE_TYPES: ReadonlySet<string> = new Set([
 export function summarizeDailyIntake(
   judgments: readonly NutrientJudgment[],
 ): DailySummary {
-  const comparable: DailySummaryItem[] = [];
+  // One comparable slot per nutrient. When a nutrient carries both an
+  // intake reference (RDA/AI) and an at-least DG goal — e.g. potassium —
+  // the intake reference wins and the DG judgment falls back to `others`,
+  // so it still feeds withinGoalCount / dgOver as before.
+  const comparableByCode = new Map<string, DailySummaryItem>();
   const others: NutrientJudgment[] = [];
 
   for (const judgment of judgments) {
     const item = toComparableItem(judgment);
-    if (item) {
-      comparable.push(item);
+    if (!item) {
+      others.push(judgment);
       continue;
     }
-    others.push(judgment);
+    const existing = comparableByCode.get(judgment.nutrientCode);
+    if (!existing) {
+      comparableByCode.set(judgment.nutrientCode, item);
+      continue;
+    }
+    const incomingIsIntake = INTAKE_REFERENCE_TYPES.has(judgment.referenceType);
+    const existingIsIntake = INTAKE_REFERENCE_TYPES.has(
+      existing.judgment.referenceType,
+    );
+    if (incomingIsIntake && !existingIsIntake) {
+      others.push(existing.judgment);
+      comparableByCode.set(judgment.nutrientCode, item);
+    } else {
+      others.push(judgment);
+    }
   }
 
+  const comparable = [...comparableByCode.values()];
   comparable.sort(
     (a, b) => (b.percentOfReference ?? 0) - (a.percentOfReference ?? 0),
   );
@@ -136,16 +155,38 @@ function thresholdOf(judgment: NutrientJudgment): number | null {
 function toComparableItem(
   judgment: NutrientJudgment,
 ): DailySummaryItem | null {
-  if (!INTAKE_REFERENCE_TYPES.has(judgment.referenceType)) {
-    return null;
-  }
   const parsed = parseOfficialValue(judgment.referenceValue);
-  if (parsed.kind !== "exact" || parsed.value <= 0) {
-    return null;
+
+  // RDA / AI: an exact numeric target — percent against that value.
+  if (INTAKE_REFERENCE_TYPES.has(judgment.referenceType)) {
+    if (parsed.kind !== "exact" || parsed.value <= 0) {
+      return null;
+    }
+    return itemFromTarget(judgment, parsed.value);
   }
+
+  // "At-least" dietary goals (e.g. 食物繊維「22以上」) are "more is better"
+  // up to the goal, so the minimum acts as the target and the nutrient can
+  // fill its bloom petal. Range / less-than / %E-range DGs are bands or
+  // upper limits, not targets, and stay out of the comparable set.
+  if (
+    judgment.referenceType === "tentative_dietary_goal" &&
+    parsed.kind === "at_least" &&
+    parsed.min > 0
+  ) {
+    return itemFromTarget(judgment, parsed.min);
+  }
+
+  return null;
+}
+
+function itemFromTarget(
+  judgment: NutrientJudgment,
+  target: number,
+): DailySummaryItem {
   return {
     judgment,
-    percentOfReference: (judgment.intakeAmount / parsed.value) * 100,
-    remainingAmount: Math.max(0, parsed.value - judgment.intakeAmount),
+    percentOfReference: (judgment.intakeAmount / target) * 100,
+    remainingAmount: Math.max(0, target - judgment.intakeAmount),
   };
 }

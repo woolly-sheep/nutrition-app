@@ -1,4 +1,6 @@
 import { evaluateFoodUntracked } from "../../../domain/analysis/foodUntrackedNutrients";
+import { buildFocusNutrients } from "../../../domain/analysis/focusNutrients";
+import type { FocusNutrient } from "../../../domain/analysis/focusNutrients";
 import { evaluateNonFoodLimits } from "../../../domain/analysis/nonFoodUpperLimits";
 import { summarizeDailyIntake } from "../../../domain/analysis/summarizeDailyIntake";
 import type {
@@ -26,6 +28,7 @@ import {
   type AnalysisExceedanceItem,
   type AnalysisNutrientItem,
   type DailyAnalysisResponse,
+  type FocusNutrientItem,
   type FoodUntrackedItem,
   type NonFoodLimitItem,
 } from "../schemas/analysis";
@@ -120,6 +123,17 @@ export async function getDailyAnalysis(
   );
   const summary = summarizeDailyIntake(judgments);
 
+  // 重点栄養素 board (#34): the DG nutrients individually. Wording is looked
+  // up per nutrient from its own DG judgment (SafeWordingService).
+  const dgJudgmentByCode = new Map(
+    judgments
+      .filter((j) => j.referenceType === "tentative_dietary_goal")
+      .map((j) => [j.nutrientCode, j]),
+  );
+  const focusNutrients = buildFocusNutrients(judgments).map((focus) =>
+    toFocusItem(focus, dgJudgmentByCode),
+  );
+
   const enrich = (item: DailySummaryItem): AnalysisNutrientItem =>
     withSplit(toResponseItem(item), foodByCode, supplementByCode);
 
@@ -149,6 +163,7 @@ export async function getDailyAnalysis(
           supplementByCode,
         ),
       ),
+      focus_nutrients: focusNutrients,
       non_food_limits: toNonFoodLimits(supplementByCode),
       food_untracked: toFoodUntracked(supplementByCode, resolved.profile),
     },
@@ -275,6 +290,29 @@ function mealBreakdown(
     })
     .filter((entry) => entry.amount > 0)
     .sort((a, b) => b.amount - a.amount);
+}
+
+function toFocusItem(
+  focus: FocusNutrient,
+  dgJudgmentByCode: ReadonlyMap<string, Parameters<typeof wordingForJudgment>[0]>,
+): FocusNutrientItem {
+  const judgment = dgJudgmentByCode.get(focus.nutrientCode);
+  const label = judgment ? wordingForJudgment(judgment).label : "";
+  return {
+    nutrient_code: focus.nutrientCode,
+    nutrient_name: focus.nutrientName,
+    unit: focus.unit,
+    direction: focus.direction,
+    status: focus.status,
+    label,
+    value: focus.value,
+    goal_value: focus.goalValue,
+    ...(focus.rangeMin !== undefined ? { range_min: focus.rangeMin } : {}),
+    ...(focus.rangeMax !== undefined ? { range_max: focus.rangeMax } : {}),
+    fill_ratio: focus.fillRatio,
+    reached: focus.reached,
+    remaining: focus.remaining,
+  };
 }
 
 function toResponseItem(item: DailySummaryItem): AnalysisNutrientItem {

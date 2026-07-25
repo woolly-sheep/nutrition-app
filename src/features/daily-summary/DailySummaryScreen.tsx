@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AchievementBadge } from "../../components/AchievementBadge";
 import { BloomFlower } from "../../components/BloomFlower";
 import { EmptyState } from "../../components/EmptyState";
+import { FocusNutrients } from "../../components/FocusNutrients";
 import { WeekGarden } from "../../components/WeekGarden";
 import { formatAmount } from "../../components/RemainingCard";
 import { SourceFooter } from "../../components/SourceFooter";
@@ -140,6 +141,8 @@ export function DailySummaryScreen() {
         長い花びらほど基準に近い推定 ·{" "}
         <span style={{ color: "#c79a12" }}>ゴールド＝目標到達</span>
       </p>
+
+      <FocusNutrients items={summary.focus_nutrients} />
 
       {garden.length > 0 && (
         <section style={{ marginTop: "16px" }}>

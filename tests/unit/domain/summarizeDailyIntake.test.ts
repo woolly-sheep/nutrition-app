@@ -109,6 +109,54 @@ describe("summarizeDailyIntake", () => {
     expect(summary.dgOver).toHaveLength(0);
   });
 
+  it("makes an at-least DG goal (fiber) comparable using its minimum as the target", () => {
+    const summary = summarizeDailyIntake([
+      judgment({
+        nutrientCode: "dietary_fiber_g",
+        nutrientName: "食物繊維",
+        referenceType: "tentative_dietary_goal",
+        status: "below_goal",
+        referenceValue: "22以上",
+        intakeAmount: 11,
+        unit: "g",
+      }),
+    ]);
+    expect(summary.comparable).toHaveLength(1);
+    expect(summary.comparable[0].percentOfReference).toBeCloseTo(50, 5);
+    expect(summary.comparable[0].remainingAmount).toBeCloseTo(11, 5);
+    expect(summary.insufficient).toHaveLength(1);
+    expect(summary.dgOver).toHaveLength(0);
+  });
+
+  it("prefers an intake reference over an at-least DG for the same nutrient (potassium)", () => {
+    const summary = summarizeDailyIntake([
+      judgment({
+        nutrientCode: "potassium_mg",
+        referenceType: "adequate_intake",
+        status: "meets_reference",
+        referenceValue: 2500,
+        intakeAmount: 2000,
+        unit: "mg",
+      }),
+      judgment({
+        nutrientCode: "potassium_mg",
+        referenceType: "tentative_dietary_goal",
+        status: "below_goal",
+        referenceValue: "3000以上",
+        intakeAmount: 2000,
+        unit: "mg",
+      }),
+    ]);
+    // Only one comparable slot, and it uses the AI target (2500), not 3000.
+    expect(summary.comparable).toHaveLength(1);
+    expect(summary.comparable[0].judgment.referenceType).toBe("adequate_intake");
+    expect(summary.comparable[0].percentOfReference).toBeCloseTo(80, 5);
+    // The displaced DG judgment still counts toward within-goal / others.
+    expect(summary.others.map((j) => j.referenceType)).toContain(
+      "tentative_dietary_goal",
+    );
+  });
+
   it("routes non-RDA/AI and non-numeric references to others, never guessing", () => {
     const summary = summarizeDailyIntake([
       judgment({

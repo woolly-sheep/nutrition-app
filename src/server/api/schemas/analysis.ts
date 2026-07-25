@@ -69,6 +69,32 @@ export type FoodUntrackedItem = {
   note: string;
 };
 
+/**
+ * A 重点栄養素 (focus nutrient) row for the home board — one 目標量(DG)
+ * nutrient shown individually (issue #34). `direction` picks the display:
+ * gain fills toward the minimum, balance marks a %E share on its range,
+ * limit fills toward the maximum. Facts only; label via SafeWordingService.
+ */
+export type FocusNutrientItem = {
+  nutrient_code: string;
+  nutrient_name: string;
+  unit: string;
+  direction: "gain" | "balance" | "limit";
+  status: JudgmentStatus;
+  label: string;
+  /** Intake (gain·limit) or %E share (balance); null when unknown. */
+  value: number | null;
+  /** DG minimum (gain) or maximum (limit); null for balance. */
+  goal_value: number | null;
+  range_min?: number;
+  range_max?: number;
+  /** 0..1+ progress toward the bound; null for balance / unknown. */
+  fill_ratio: number | null;
+  reached: boolean;
+  /** To the goal (gain) or headroom under the limit (limit); null otherwise. */
+  remaining: number | null;
+};
+
 /** UL/DG threshold exceedance (UI design v0.2 addendum §1/§3). */
 export type AnalysisExceedanceItem = AnalysisNutrientItem & {
   threshold_value: number;
@@ -99,6 +125,8 @@ export type DailyAnalysisResponse = {
     ul_reached: readonly AnalysisExceedanceItem[];
     /** 6b section — empty on days with no DG overage. */
     dg_over: readonly AnalysisExceedanceItem[];
+    /** 重点栄養素 board — the 目標量(DG) nutrients, individually (#34). */
+    focus_nutrients: readonly FocusNutrientItem[];
     /** Supplement-only non-food UL checks — empty unless a supplement hits one. */
     non_food_limits: readonly NonFoodLimitItem[];
     /** Food-untracked supplement nutrients (n-3 等) vs their AI — empty unless recorded. */
