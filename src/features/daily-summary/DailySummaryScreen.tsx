@@ -111,6 +111,17 @@ export function DailySummaryScreen() {
     ulReachedNames: summary.ul_reached.map((item) => item.nutrient_name),
     dgOverNames: summary.dg_over.map((item) => item.nutrient_name),
   });
+  // #59: glanceable quick-summary that also jumps to each section.
+  const homeStats: {
+    label: string;
+    value: number;
+    href: string;
+    emphasis: boolean;
+  }[] = [
+    { label: "達成", value: summary.achieved.length, href: "#home-done", emphasis: false },
+    { label: "あと少し", value: summary.insufficient.length, href: "#home-short", emphasis: false },
+    { label: "気をつけたい", value: watchItems.length, href: "#home-watch", emphasis: true },
+  ];
 
   return (
     <div>
@@ -142,10 +153,41 @@ export function DailySummaryScreen() {
         <span style={{ color: "#c79a12" }}>ゴールド＝目標到達</span>
       </p>
 
+      <nav aria-label="今日の要約" style={styles.statStrip}>
+        {homeStats.map((stat) => {
+          const on = stat.value > 0;
+          const tileStyle = {
+            ...styles.statTile,
+            ...(stat.emphasis && on
+              ? styles.statTileEmphasis
+              : styles.statTileQuiet),
+          };
+          const inner = (
+            <>
+              <span style={styles.statValue}>{stat.value}</span>
+              <span style={styles.statLabel}>{stat.label}</span>
+            </>
+          );
+          return on ? (
+            <a
+              key={stat.label}
+              href={stat.href}
+              style={{ ...tileStyle, ...styles.statTileLink }}
+            >
+              {inner}
+            </a>
+          ) : (
+            <div key={stat.label} style={tileStyle}>
+              {inner}
+            </div>
+          );
+        })}
+      </nav>
+
       <FocusNutrients items={summary.focus_nutrients} />
 
       {garden.length > 0 && (
-        <section style={{ marginTop: "16px" }}>
+        <section style={styles.card}>
           <h2 style={styles.sectionTitle}>今週の庭</h2>
           <WeekGarden days={garden} />
           <p style={{ color: "var(--color-subtext)", fontSize: "11px", margin: "8px 0 0" }}>
@@ -154,7 +196,7 @@ export function DailySummaryScreen() {
         </section>
       )}
 
-      <section style={{ marginTop: "20px" }}>
+      <section id="home-done" style={styles.card}>
         <h2 style={styles.sectionTitle}>できていること</h2>
         <p style={{ margin: "0 0 8px", fontSize: "14px" }}>
           {summary.comparable_count}項目中{summary.at_least_80_count}項目が80%以上
@@ -172,7 +214,7 @@ export function DailySummaryScreen() {
         )}
       </section>
 
-      <section style={{ marginTop: "24px" }}>
+      <section id="home-short" style={styles.card}>
         <h2 style={styles.sectionTitle}>あと少し</h2>
         {summary.insufficient.length === 0 ? (
           <p style={{ color: "var(--color-subtext)", fontSize: "14px" }}>
@@ -204,7 +246,7 @@ export function DailySummaryScreen() {
       </section>
 
       {watchItems.length > 0 && (
-        <section style={styles.watchSection}>
+        <section id="home-watch" style={styles.watchSection}>
           <h2 style={styles.sectionTitle}>気をつけたい</h2>
           {watchItems.map(({ item, kind }) => (
             <OverCauseRow
@@ -278,11 +320,52 @@ const styles = {
     fontSize: "15px",
     margin: "0 0 10px",
   },
-  watchSection: {
-    marginTop: "24px",
-    padding: "14px 16px",
-    background: "var(--color-surface)",
+  statStrip: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: "8px",
+    margin: "12px 0 4px",
+  },
+  statTile: {
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "2px",
+    minHeight: "var(--tap-target-min)",
+    padding: "10px 4px",
     borderRadius: "12px",
+    background: "var(--color-base)",
+  },
+  statTileEmphasis: { border: "1px solid var(--color-text)" },
+  statTileQuiet: { border: "1px solid var(--color-surface)" },
+  statTileLink: { textDecoration: "none", color: "inherit", cursor: "pointer" },
+  statValue: {
+    fontFamily: "var(--font-numeric)",
+    fontSize: "22px",
+    lineHeight: 1.1,
+    color: "var(--color-primary-deep)",
+  },
+  statLabel: { fontSize: "11px", color: "var(--color-subtext)" },
+  // #59: shared card-depth treatment for the home sections.
+  card: {
+    marginTop: "16px",
+    padding: "16px",
+    background: "var(--color-base)",
+    border: "1px solid var(--color-surface)",
+    borderRadius: "16px",
+    boxShadow:
+      "0 1px 2px rgba(32, 42, 44, 0.04), 0 8px 24px rgba(32, 42, 44, 0.05)",
+    scrollMarginTop: "16px",
+  },
+  watchSection: {
+    marginTop: "16px",
+    padding: "16px",
+    background: "var(--color-surface)",
+    borderRadius: "16px",
+    boxShadow:
+      "0 1px 2px rgba(32, 42, 44, 0.04), 0 8px 24px rgba(32, 42, 44, 0.05)",
+    scrollMarginTop: "16px",
   },
   watchLink: {
     display: "inline-flex",
