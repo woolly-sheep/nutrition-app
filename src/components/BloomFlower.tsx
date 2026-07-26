@@ -41,11 +41,17 @@ export function BloomFlower({ petals, overall }: Props) {
       aria-label={ariaLabel(petals, overall)}
     >
       <style>{`
-        .bloom-petals { animation: bloomGrow 0.6s ease-out both; transform-origin: center; transform-box: fill-box; }
-        @keyframes bloomGrow { from { transform: scale(0.55); opacity: 0.5; } to { transform: scale(1); opacity: 1; } }
-        @media (prefers-reduced-motion: reduce) { .bloom-petals { animation: none; } }
+        .bloom-petal { animation: bloomGrow 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; transform-origin: ${CENTER}px ${CENTER_Y}px; transform-box: view-box; }
+        @keyframes bloomGrow { from { transform: scale(0.35); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) { .bloom-petal { animation: none; } }
       `}</style>
       <defs>
+        {/* Soft halo so the bloom reads as the hero, not a flat diagram. */}
+        <radialGradient id="bloom-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="var(--color-surface)" stopOpacity="0.85" />
+          <stop offset="60%" stopColor="var(--color-surface)" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="var(--color-surface)" stopOpacity="0" />
+        </radialGradient>
         {/* Teal hatch = supplement-derived share (decision-20260724-supplement-intake). */}
         <pattern
           id="bloom-supplement-hatch"
@@ -58,7 +64,8 @@ export function BloomFlower({ petals, overall }: Props) {
           <line x1="0" y1="0" x2="0" y2="5" stroke="var(--color-primary)" strokeWidth="2" />
         </pattern>
       </defs>
-      <g className="bloom-petals">
+      <circle cx={CENTER} cy={CENTER_Y} r={104} fill="url(#bloom-glow)" />
+      <g>
       {petals.map((petal, i) => {
         const angle = ANGLES[i] ?? 0;
         const isBud = petal.fulfillment === null;
@@ -83,7 +90,12 @@ export function BloomFlower({ petals, overall }: Props) {
         const hasSupplement = !isBud && ryFood < ry - 0.5;
         const tipY = cy - ry;
         return (
-          <g key={petal.key} transform={`rotate(${angle} ${CENTER} ${CENTER_Y})`}>
+          <g
+            key={petal.key}
+            className="bloom-petal"
+            style={{ animationDelay: `${(i * 0.06).toFixed(2)}s` }}
+          >
+            <g transform={`rotate(${angle} ${CENTER} ${CENTER_Y})`}>
             {/* Full petal: solid when no supplement, else hatched tip layer. */}
             <ellipse
               cx={CENTER}
@@ -113,6 +125,7 @@ export function BloomFlower({ petals, overall }: Props) {
                 strokeWidth={2}
               />
             )}
+            </g>
           </g>
         );
       })}
