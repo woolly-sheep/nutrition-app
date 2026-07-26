@@ -47,6 +47,9 @@ export function MealEntryScreen() {
   const [date, setDate] = useState<string>(todayIsoDate());
   const [savedMeals, setSavedMeals] = useState<readonly DayMeal[]>([]);
   const [recipes, setRecipes] = useState<readonly RecipeView[]>([]);
+  // #58: split the tab into 追加する (input) and この日の記録 (review) so the
+  // long single scroll no longer mixes the two, and the save action stays put.
+  const [zone, setZone] = useState<"add" | "log">("add");
 
   const today = todayIsoDate();
 
@@ -212,33 +215,66 @@ export function MealEntryScreen() {
             →
           </button>
         </div>
-        <h1 style={styles.title}>{MEAL_TYPE_LABELS[mealType]}を記録</h1>
-        <div role="group" aria-label="食事区分" style={styles.mealTypeRow}>
-          {(Object.keys(MEAL_TYPE_LABELS) as MealType[]).map((type) => (
-            <button
-              key={type}
-              type="button"
-              onClick={() => setMealType(type)}
-              aria-pressed={mealType === type}
-              style={{
-                ...styles.mealTypeButton,
-                background:
-                  mealType === type
-                    ? "var(--color-primary)"
-                    : "var(--color-base)",
-                color:
-                  mealType === type
-                    ? "var(--color-base)"
-                    : "var(--color-subtext)",
-              }}
-            >
-              {MEAL_TYPE_LABELS[type]}
-            </button>
-          ))}
+        <div role="tablist" aria-label="記録の表示" style={styles.zoneRow}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={zone === "add"}
+            onClick={() => setZone("add")}
+            style={{
+              ...styles.zoneButton,
+              ...(zone === "add"
+                ? styles.zoneButtonActive
+                : styles.zoneButtonIdle),
+            }}
+          >
+            追加する
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={zone === "log"}
+            onClick={() => setZone("log")}
+            style={{
+              ...styles.zoneButton,
+              ...(zone === "log"
+                ? styles.zoneButtonActive
+                : styles.zoneButtonIdle),
+            }}
+          >
+            この日の記録{savedMeals.length > 0 ? ` · ${savedMeals.length}` : ""}
+          </button>
         </div>
       </header>
 
-      <FoodSearchBox onAdd={handleAdd} />
+      {zone === "add" ? (
+        <>
+          <h1 style={styles.title}>{MEAL_TYPE_LABELS[mealType]}を記録</h1>
+          <div role="group" aria-label="食事区分" style={styles.mealTypeRow}>
+            {(Object.keys(MEAL_TYPE_LABELS) as MealType[]).map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setMealType(type)}
+                aria-pressed={mealType === type}
+                style={{
+                  ...styles.mealTypeButton,
+                  background:
+                    mealType === type
+                      ? "var(--color-primary)"
+                      : "var(--color-base)",
+                  color:
+                    mealType === type
+                      ? "var(--color-base)"
+                      : "var(--color-subtext)",
+                }}
+              >
+                {MEAL_TYPE_LABELS[type]}
+              </button>
+            ))}
+          </div>
+
+          <FoodSearchBox onAdd={handleAdd} />
 
       <details style={{ marginTop: "12px" }}>
         <summary style={styles.finderSummary}>栄養素から探す</summary>
@@ -269,41 +305,51 @@ export function MealEntryScreen() {
         onRecipeSaved={() => void loadShortcuts()}
       />
 
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={draftItems.length === 0 || saveState === "saving"}
-        style={{
-          ...styles.saveButton,
-          opacity: draftItems.length === 0 ? 0.5 : 1,
-        }}
-      >
-        {MEAL_TYPE_LABELS[mealType]}を保存（{draftItems.length}品 ·{" "}
-        {Math.round(totalKcal)} kcal）
-      </button>
+          {saveState === "saved" && (
+            <p role="status" style={styles.savedNote}>
+              保存しました。「この日の記録」で確認できます。
+            </p>
+          )}
+          {saveState === "error" && (
+            <p role="status" style={styles.subtext}>
+              保存できませんでした。入力内容を確認して、もう一度お試しください。
+            </p>
+          )}
 
-      <SavedMealsList
-        meals={savedMeals}
-        onChanged={() => void loadShortcuts()}
-      />
+          <details style={{ marginTop: "28px" }}>
+            <summary style={styles.supplementSummary}>
+              サプリメントを記録
+            </summary>
+            <div style={{ marginTop: "10px" }}>
+              <SupplementPanel date={date} />
+            </div>
+          </details>
 
-      {saveState === "saved" && (
-        <p role="status" style={styles.savedNote}>
-          保存しました。ホームで今日のサマリーを確認できます。
+          <div style={styles.saveBarWrap}>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={draftItems.length === 0 || saveState === "saving"}
+              style={{
+                ...styles.saveButton,
+                opacity: draftItems.length === 0 ? 0.5 : 1,
+              }}
+            >
+              {MEAL_TYPE_LABELS[mealType]}を保存（{draftItems.length}品 ·{" "}
+              {Math.round(totalKcal)} kcal）
+            </button>
+          </div>
+        </>
+      ) : savedMeals.length > 0 ? (
+        <SavedMealsList
+          meals={savedMeals}
+          onChanged={() => void loadShortcuts()}
+        />
+      ) : (
+        <p style={styles.emptyLog}>
+          この日の記録はまだありません。「追加する」から記録できます。
         </p>
       )}
-      {saveState === "error" && (
-        <p role="status" style={styles.subtext}>
-          保存できませんでした。入力内容を確認して、もう一度お試しください。
-        </p>
-      )}
-
-      <details style={{ marginTop: "28px" }}>
-        <summary style={styles.supplementSummary}>サプリメントを記録</summary>
-        <div style={{ marginTop: "10px" }}>
-          <SupplementPanel date={date} />
-        </div>
-      </details>
 
       <footer style={styles.footer}>
         <p style={styles.subtext}>
@@ -355,6 +401,30 @@ const styles = {
     cursor: "pointer",
   },
   title: { margin: "4px 0 12px", fontSize: "20px" },
+  zoneRow: { display: "flex", gap: "8px", marginTop: "12px" },
+  zoneButton: {
+    minHeight: "var(--tap-target-min)",
+    flex: 1,
+    borderRadius: "10px",
+    fontSize: "14px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  zoneButtonActive: {
+    border: "1px solid var(--color-primary)",
+    background: "var(--color-primary)",
+    color: "var(--color-base)",
+  },
+  zoneButtonIdle: {
+    border: "1px solid var(--color-surface)",
+    background: "var(--color-base)",
+    color: "var(--color-subtext)",
+  },
+  emptyLog: {
+    color: "var(--color-subtext)",
+    fontSize: "14px",
+    margin: "24px 0",
+  },
   mealTypeRow: { display: "flex", gap: "8px" },
   mealTypeButton: {
     minHeight: "var(--tap-target-min)",
@@ -373,10 +443,20 @@ const styles = {
     color: "var(--color-primary)",
     fontWeight: 700,
   },
+  saveBarWrap: {
+    position: "sticky" as const,
+    // Clear the fixed bottom TabBar so the primary action is always reachable.
+    bottom: "calc(var(--tap-target-min) + 12px)",
+    zIndex: 5,
+    marginTop: "20px",
+    paddingTop: "10px",
+    paddingBottom: "2px",
+    background: "var(--color-base)",
+    boxShadow: "0 -10px 16px -10px rgba(32, 42, 44, 0.14)",
+  },
   saveButton: {
     width: "100%",
     minHeight: "var(--tap-target-min)",
-    marginTop: "16px",
     border: "none",
     borderRadius: "8px",
     background: "var(--color-primary)",
