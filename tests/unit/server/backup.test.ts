@@ -37,7 +37,14 @@ describe("restoreBackup", () => {
         meals: [validMeal()],
         profile: { sex: "female", birthDate: "2000-03-03" },
       },
-      { seed, saveMeals, saveProfile },
+      {
+        seed,
+        saveMeals,
+        saveProfile,
+        saveSupplements: vi.fn(),
+        saveSupplementProducts: vi.fn(),
+        saveRecipes: vi.fn(),
+      },
     );
     expect(result.ok).toBe(true);
     expect(saveMeals).toHaveBeenCalledOnce();
@@ -91,7 +98,14 @@ describe("restoreBackup", () => {
     const saveSupplements = vi.fn(async () => {});
     const result = await restoreBackup(
       { version: 1, meals: [validMeal()], supplements: [supplement] },
-      { seed, saveMeals: vi.fn(), saveProfile: vi.fn(), saveSupplements },
+      {
+        seed,
+        saveMeals: vi.fn(),
+        saveProfile: vi.fn(),
+        saveSupplements,
+        saveSupplementProducts: vi.fn(),
+        saveRecipes: vi.fn(),
+      },
     );
     expect(result.ok).toBe(true);
     expect(saveSupplements).toHaveBeenCalledWith([supplement]);
@@ -144,6 +158,7 @@ describe("restoreBackup", () => {
         saveProfile: vi.fn(),
         saveSupplements: vi.fn(),
         saveSupplementProducts,
+        saveRecipes: vi.fn(),
       },
     );
     expect(result.ok).toBe(true);
