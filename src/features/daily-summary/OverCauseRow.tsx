@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useId, useState } from "react";
+import { ContributionBreakdown } from "../../components/ContributionBreakdown";
 import { formatAmount } from "../../components/RemainingCard";
 import type {
   AnalysisExceedanceItem,
@@ -11,13 +12,9 @@ import type {
  * A "気をつけたい" over-intake row that expands to show which of the user's
  * foods drove this nutrient over the past year (issue #28 ①). The cause is a
  * habit, so the breakdown aggregates the trailing 365 days (window=year), not
- * a single day. Facts only — no red, no "食べるな" judgment; the segments share
- * the neutral teal breakdown hue used by the shortfall view (1 color = 1
- * meaning). Fetched lazily on first expand.
+ * a single day. Facts only — no red, no "食べるな" judgment; the food breakdown
+ * comes from the shared ContributionBreakdown. Fetched lazily on first expand.
  */
-
-const SEGMENT_TINTS = ["#2f8c7e", "#6fb7ab", "#a7d6ce"];
-const OTHER_TINT = "#e0efec";
 
 type Props = {
   item: AnalysisExceedanceItem;
@@ -97,48 +94,11 @@ export function OverCauseRow({ item, kind, date }: Props) {
                 <p style={styles.panelTitle}>
                   過去1年で{contribution.nutrient_name}を多く摂った食材（参考・推定）
                 </p>
-                <div style={styles.stack}>
-                  {contribution.foods.map((food, index) => (
-                    <span
-                      key={food.food_id}
-                      style={{
-                        width: `${food.percent}%`,
-                        background: SEGMENT_TINTS[index] ?? OTHER_TINT,
-                        height: "100%",
-                      }}
-                    />
-                  ))}
-                  {contribution.other_percent > 0 && (
-                    <span
-                      style={{
-                        width: `${contribution.other_percent}%`,
-                        background: OTHER_TINT,
-                        height: "100%",
-                      }}
-                    />
-                  )}
-                </div>
-                <div style={styles.legend}>
-                  {contribution.foods.map((food, index) => (
-                    <span key={food.food_id} style={styles.legendItem}>
-                      <span
-                        style={{
-                          ...styles.swatch,
-                          background: SEGMENT_TINTS[index] ?? OTHER_TINT,
-                        }}
-                      />
-                      {food.display_name} {Math.round(food.percent)}%
-                    </span>
-                  ))}
-                  {contribution.other_percent > 0 && (
-                    <span style={styles.legendItem}>
-                      <span
-                        style={{ ...styles.swatch, background: OTHER_TINT }}
-                      />
-                      その他 {Math.round(contribution.other_percent)}%
-                    </span>
-                  )}
-                </div>
+                <ContributionBreakdown
+                  foods={contribution.foods}
+                  otherPercent={contribution.other_percent}
+                  variant="compact"
+                />
                 <p style={styles.panelHint}>
                   分量や頻度の多い食材が上位に出ます。摂り方を見直す手がかりにどうぞ。
                 </p>
@@ -197,21 +157,4 @@ const styles = {
     margin: "8px 0 0",
     lineHeight: 1.5,
   },
-  stack: {
-    display: "flex",
-    height: "12px",
-    borderRadius: "999px",
-    overflow: "hidden",
-    marginBottom: "8px",
-    background: "var(--color-surface)",
-  },
-  legend: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "6px 12px",
-    fontSize: "11px",
-    color: "var(--color-text)",
-  },
-  legendItem: { display: "inline-flex", alignItems: "center", gap: "5px" },
-  swatch: { width: "8px", height: "8px", borderRadius: "2px" },
 } satisfies Record<string, React.CSSProperties>;

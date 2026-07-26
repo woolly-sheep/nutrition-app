@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useId, useState } from "react";
+import { ContributionBreakdown } from "../../components/ContributionBreakdown";
 import { formatAmount } from "../../components/RemainingCard";
 import { Sparkline } from "../../components/Sparkline";
 import type { FoodCandidateItem } from "../../server/api/handlers/getFoodCandidates";
@@ -14,12 +15,9 @@ import type {
 /**
  * A "あと少し" shortfall row that expands to show where today's intake of
  * this nutrient came from (dashboard insight ②). The breakdown is fetched
- * lazily on first expand — the home screen stays quiet until asked. All
- * segments share the intake (teal) hue: 1 color = 1 meaning.
+ * lazily on first expand — the home screen stays quiet until asked. The bar +
+ * legend come from the shared ContributionBreakdown.
  */
-
-const SEGMENT_TINTS = ["#2f8c7e", "#6fb7ab", "#a7d6ce"];
-const OTHER_TINT = "#e0efec";
 
 type Props = {
   item: AnalysisNutrientItem;
@@ -121,46 +119,11 @@ export function ShortfallRow({ item, nudge, date, showTrend = false }: Props) {
                 <p style={styles.panelTitle}>
                   今日の{contribution.nutrient_name}は、どの食事から？（参考・推定）
                 </p>
-                <div style={styles.stack}>
-                  {contribution.foods.map((food, index) => (
-                    <span
-                      key={food.food_id}
-                      style={{
-                        width: `${food.percent}%`,
-                        background: SEGMENT_TINTS[index] ?? OTHER_TINT,
-                        height: "100%",
-                      }}
-                    />
-                  ))}
-                  {contribution.other_percent > 0 && (
-                    <span
-                      style={{
-                        width: `${contribution.other_percent}%`,
-                        background: OTHER_TINT,
-                        height: "100%",
-                      }}
-                    />
-                  )}
-                </div>
-                <div style={styles.legend}>
-                  {contribution.foods.map((food, index) => (
-                    <span key={food.food_id} style={styles.legendItem}>
-                      <span
-                        style={{
-                          ...styles.swatch,
-                          background: SEGMENT_TINTS[index] ?? OTHER_TINT,
-                        }}
-                      />
-                      {food.display_name} {Math.round(food.percent)}%
-                    </span>
-                  ))}
-                  {contribution.other_percent > 0 && (
-                    <span style={styles.legendItem}>
-                      <span style={{ ...styles.swatch, background: OTHER_TINT }} />
-                      その他 {Math.round(contribution.other_percent)}%
-                    </span>
-                  )}
-                </div>
+                <ContributionBreakdown
+                  foods={contribution.foods}
+                  otherPercent={contribution.other_percent}
+                  variant="compact"
+                />
               </>
             ))}
 
@@ -271,21 +234,6 @@ const styles = {
     color: "var(--color-subtext)",
     margin: 0,
   },
-  stack: {
-    display: "flex",
-    height: "12px",
-    borderRadius: "999px",
-    overflow: "hidden",
-    marginBottom: "8px",
-    background: "var(--color-surface)",
-  },
-  legend: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "6px 12px",
-    fontSize: "11px",
-    color: "var(--color-text)",
-  },
   trend: {
     marginTop: "12px",
     paddingTop: "10px",
@@ -296,16 +244,6 @@ const styles = {
     color: "var(--color-text)",
     margin: "6px 0 0",
     lineHeight: 1.5,
-  },
-  legendItem: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "5px",
-  },
-  swatch: {
-    width: "8px",
-    height: "8px",
-    borderRadius: "2px",
   },
   nudge: {
     display: "inline-flex",
