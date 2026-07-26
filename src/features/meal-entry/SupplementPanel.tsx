@@ -2,11 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { formatAmount } from "../../components/RemainingCard";
-import {
-  SUPPLEMENT_NUTRIENTS,
-  type SupplementRecord,
-} from "../../server/api/schemas/supplements";
+import { type SupplementRecord } from "../../server/api/schemas/supplements";
 import { SupplementProductManager } from "./SupplementProductManager";
+import { SupplementEditForm } from "./SupplementEditForm";
+import {
+  SupplementAmountFields,
+  NUTRIENT_BY_CODE,
+  computeAmounts,
+  emptyRows,
+  type Draft,
+} from "./SupplementAmountFields";
 
 /**
  * サプリメント記録 (decision-20260724-supplement-intake). Self-reported: the
@@ -20,18 +25,10 @@ type Props = {
   date: string;
 };
 
-type Draft = { nutrientCode: string; amountText: string };
-
-const NUTRIENT_BY_CODE = new Map(
-  SUPPLEMENT_NUTRIENTS.map((n) => [n.code, n]),
-);
-
 export function SupplementPanel({ date }: Props) {
   const [saved, setSaved] = useState<readonly SupplementRecord[]>([]);
   const [productName, setProductName] = useState("");
-  const [rows, setRows] = useState<Draft[]>([
-    { nutrientCode: SUPPLEMENT_NUTRIENTS[0].code, amountText: "" },
-  ]);
+  const [rows, setRows] = useState<Draft[]>(emptyRows());
   const [saveState, setSaveState] = useState<"idle" | "saving" | "error">(
     "idle",
   );
@@ -55,12 +52,7 @@ export function SupplementPanel({ date }: Props) {
     void load();
   }, [load]);
 
-  const validAmounts = rows
-    .map((row) => ({ nutrient_code: row.nutrientCode, amount: Number(row.amountText) }))
-    .filter((row) => Number.isFinite(row.amount) && row.amount > 0);
-  const hasDuplicate =
-    new Set(validAmounts.map((a) => a.nutrient_code)).size !==
-    validAmounts.length;
+  const { validAmounts, hasDuplicate } = computeAmounts(rows);
   const canSave =
     productName.trim() !== "" &&
     validAmounts.length > 0 &&
@@ -87,7 +79,7 @@ export function SupplementPanel({ date }: Props) {
         return;
       }
       setProductName("");
-      setRows([{ nutrientCode: SUPPLEMENT_NUTRIENTS[0].code, amountText: "" }]);
+      setRows(emptyRows());
       setSaveState("idle");
       await load();
     } catch {
@@ -108,65 +100,18 @@ export function SupplementPanel({ date }: Props) {
     }
   };
 
-  return editingId === null ? (
-    <ViewMode
-      date={date}
-      saved={saved}
-      productName={productName}
-      setProductName={setProductName}
-      rows={rows}
-      setRows={setRows}
-      canSave={canSave}
-      hasDuplicate={hasDuplicate}
-      saveState={saveState}
-      onSave={handleSave}
-      onDelete={handleDelete}
-      onEdit={(id) => setEditingId(id)}
-      onLogged={() => void load()}
-    />
-  ) : (
-    <EditMode
-      record={saved.find((r) => r.supplement_id === editingId)!}
-      onCancel={() => setEditingId(null)}
-      onSaved={async () => {
-        setEditingId(null);
-        await load();
-      }}
-    />
-  );
-}
-
-type ViewProps = {
-  date: string;
-  saved: readonly SupplementRecord[];
-  productName: string;
-  setProductName: (value: string) => void;
-  rows: Draft[];
-  setRows: React.Dispatch<React.SetStateAction<Draft[]>>;
-  canSave: boolean;
-  hasDuplicate: boolean;
-  saveState: "idle" | "saving" | "error";
-  onSave: () => void;
-  onDelete: (id: string) => void;
-  onEdit: (id: string) => void;
-  onLogged: () => void;
-};
-
-function ViewMode({
-  date,
-  saved,
-  productName,
-  setProductName,
-  rows,
-  setRows,
-  canSave,
-  hasDuplicate,
-  saveState,
-  onSave,
-  onDelete,
-  onEdit,
-  onLogged,
-}: ViewProps) {
+  if (editingId !== null) {
+    return (
+      <SupplementEditForm
+        record={saved.find((r) => r.supplement_id === editingId)!}
+        onCancel={() => setEditingId(null)}
+        onSaved={async () => {
+          setEditingId(null);
+          await load();
+        }}
+      />
+    );
+  }
 
   return (
     <div>
@@ -175,7 +120,7 @@ function ViewMode({
         食品からの摂取とは分けて集計し、分析タブで内訳を表示します。
       </p>
 
-      <SupplementProductManager date={date} onLogged={onLogged} />
+      <SupplementProductManager date={date} onLogged={() => void load()} />
 
       <p style={styles.formHeading}>この日に記録したサプリ</p>
 
@@ -197,7 +142,7 @@ function ViewMode({
               <div style={styles.itemActions}>
                 <button
                   type="button"
-                  onClick={() => onEdit(record.supplement_id)}
+                  onClick={() => setEditingId(record.supplement_id)}
                   style={styles.editButton}
                   aria-label={`${record.product_name}を編集`}
                 >
@@ -205,7 +150,7 @@ function ViewMode({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onDelete(record.supplement_id)}
+                  onClick={() => handleDelete(record.supplement_id)}
                   style={styles.deleteButton}
                   aria-label={`${record.product_name}を削除`}
                 >
@@ -217,80 +162,19 @@ function ViewMode({
         </ul>
       )}
 
-      <label style={styles.label} htmlFor="supplement-name">
-        製品名
-      </label>
-      <input
-        id="supplement-name"
-        type="text"
-        value={productName}
-        onChange={(event) => setProductName(event.target.value)}
+      <SupplementAmountFields
+        nameId="supplement-name"
+        productName={productName}
+        setProductName={setProductName}
         placeholder="マルチビタミン など"
-        maxLength={100}
-        style={styles.textInput}
+        rows={rows}
+        setRows={setRows}
+        hasDuplicate={hasDuplicate}
       />
 
-      <span style={styles.label}>含まれる栄養素（表示値）</span>
-      {rows.map((row, index) => (
-        <div key={index} style={styles.amountRow}>
-          <select
-            value={row.nutrientCode}
-            onChange={(event) =>
-              updateRow(setRows, index, { nutrientCode: event.target.value })
-            }
-            aria-label="栄養素"
-            style={styles.select}
-          >
-            {SUPPLEMENT_NUTRIENTS.map((n) => (
-              <option key={n.code} value={n.code}>
-                {n.name}（{n.unit}）
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            inputMode="decimal"
-            min="0"
-            value={row.amountText}
-            onChange={(event) =>
-              updateRow(setRows, index, { amountText: event.target.value })
-            }
-            aria-label={`${NUTRIENT_BY_CODE.get(row.nutrientCode)?.name ?? ""}の量`}
-            style={styles.amountInput}
-          />
-          {rows.length > 1 && (
-            <button
-              type="button"
-              onClick={() => setRows(rows.filter((_, i) => i !== index))}
-              style={styles.removeRow}
-              aria-label="この栄養素を外す"
-            >
-              ×
-            </button>
-          )}
-        </div>
-      ))}
-
       <button
         type="button"
-        onClick={() =>
-          setRows([
-            ...rows,
-            { nutrientCode: nextNutrient(rows), amountText: "" },
-          ])
-        }
-        style={styles.addRow}
-      >
-        ＋ 栄養素を追加
-      </button>
-
-      {hasDuplicate && (
-        <p style={styles.note}>同じ栄養素が重複しています。まとめてください。</p>
-      )}
-
-      <button
-        type="button"
-        onClick={onSave}
+        onClick={handleSave}
         disabled={!canSave}
         style={{ ...styles.saveButton, opacity: canSave ? 1 : 0.5 }}
       >
@@ -302,192 +186,6 @@ function ViewMode({
         </p>
       )}
     </div>
-  );
-}
-
-type EditProps = {
-  record: SupplementRecord;
-  onCancel: () => void;
-  onSaved: () => void;
-};
-
-/**
- * Inline edit of one saved supplement record (issue #31). Same fields and
- * rules as recording; the record keeps its day and identity — only the
- * product name and amounts change. Mirrors the meal inline-edit pattern:
- * no modal, 保存/やめる, and editing to zero amounts is blocked.
- */
-function EditMode({ record, onCancel, onSaved }: EditProps) {
-  const [productName, setProductName] = useState(record.product_name);
-  const [rows, setRows] = useState<Draft[]>(
-    record.amounts.map((a) => ({
-      nutrientCode: a.nutrient_code,
-      amountText: String(a.amount),
-    })),
-  );
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "error">(
-    "idle",
-  );
-
-  const validAmounts = rows
-    .map((row) => ({ nutrient_code: row.nutrientCode, amount: Number(row.amountText) }))
-    .filter((row) => Number.isFinite(row.amount) && row.amount > 0);
-  const hasDuplicate =
-    new Set(validAmounts.map((a) => a.nutrient_code)).size !==
-    validAmounts.length;
-  const canSave =
-    productName.trim() !== "" &&
-    validAmounts.length > 0 &&
-    !hasDuplicate &&
-    saveState !== "saving";
-
-  const handleUpdate = async () => {
-    if (!canSave) {
-      return;
-    }
-    setSaveState("saving");
-    try {
-      const response = await fetch(`/api/supplements/${record.supplement_id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date: record.date,
-          product_name: productName.trim(),
-          amounts: validAmounts,
-        }),
-      });
-      if (!response.ok) {
-        setSaveState("error");
-        return;
-      }
-      onSaved();
-    } catch {
-      setSaveState("error");
-    }
-  };
-
-  return (
-    <div style={styles.editCard}>
-      <p style={styles.formHeading}>サプリの記録を編集</p>
-
-      <label style={styles.label} htmlFor="supplement-edit-name">
-        製品名
-      </label>
-      <input
-        id="supplement-edit-name"
-        type="text"
-        value={productName}
-        onChange={(event) => setProductName(event.target.value)}
-        maxLength={100}
-        style={styles.textInput}
-      />
-
-      <span style={styles.label}>含まれる栄養素（表示値）</span>
-      {rows.map((row, index) => (
-        <div key={index} style={styles.amountRow}>
-          <select
-            value={row.nutrientCode}
-            onChange={(event) =>
-              updateRow(setRows, index, { nutrientCode: event.target.value })
-            }
-            aria-label="栄養素"
-            style={styles.select}
-          >
-            {SUPPLEMENT_NUTRIENTS.map((n) => (
-              <option key={n.code} value={n.code}>
-                {n.name}（{n.unit}）
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            inputMode="decimal"
-            min="0"
-            value={row.amountText}
-            onChange={(event) =>
-              updateRow(setRows, index, { amountText: event.target.value })
-            }
-            aria-label={`${NUTRIENT_BY_CODE.get(row.nutrientCode)?.name ?? ""}の量`}
-            style={styles.amountInput}
-          />
-          {rows.length > 1 && (
-            <button
-              type="button"
-              onClick={() => setRows(rows.filter((_, i) => i !== index))}
-              style={styles.removeRow}
-              aria-label="この栄養素を外す"
-            >
-              ×
-            </button>
-          )}
-        </div>
-      ))}
-
-      <button
-        type="button"
-        onClick={() =>
-          setRows([
-            ...rows,
-            { nutrientCode: nextNutrient(rows), amountText: "" },
-          ])
-        }
-        style={styles.addRow}
-      >
-        ＋ 栄養素を追加
-      </button>
-
-      {hasDuplicate && (
-        <p style={styles.note}>同じ栄養素が重複しています。まとめてください。</p>
-      )}
-
-      <div style={styles.editActions}>
-        <button
-          type="button"
-          onClick={onCancel}
-          style={styles.cancelButton}
-        >
-          やめる
-        </button>
-        <button
-          type="button"
-          onClick={() => void handleUpdate()}
-          disabled={!canSave}
-          style={{
-            ...styles.saveButton,
-            marginTop: 0,
-            width: "auto",
-            flex: "1 1 auto",
-            opacity: canSave ? 1 : 0.5,
-          }}
-        >
-          保存
-        </button>
-      </div>
-      {saveState === "error" && (
-        <p role="status" style={styles.note}>
-          保存できませんでした。もう一度お試しください。
-        </p>
-      )}
-    </div>
-  );
-}
-
-function updateRow(
-  setRows: React.Dispatch<React.SetStateAction<Draft[]>>,
-  index: number,
-  patch: Partial<Draft>,
-) {
-  setRows((rows) =>
-    rows.map((row, i) => (i === index ? { ...row, ...patch } : row)),
-  );
-}
-
-/** First nutrient not already chosen, so adding a row is useful by default. */
-function nextNutrient(rows: readonly Draft[]): string {
-  const used = new Set(rows.map((r) => r.nutrientCode));
-  return (
-    SUPPLEMENT_NUTRIENTS.find((n) => !used.has(n.code))?.code ??
-    SUPPLEMENT_NUTRIENTS[0].code
   );
 }
 
@@ -537,91 +235,6 @@ const styles = {
     minHeight: "var(--tap-target-min)",
     padding: "0 12px",
     border: "1px solid var(--color-primary)",
-    borderRadius: "8px",
-    background: "var(--color-base)",
-    color: "var(--color-primary)",
-    fontSize: "13px",
-    cursor: "pointer",
-  },
-  editCard: {
-    border: "1px solid var(--color-primary)",
-    borderRadius: "10px",
-    padding: "14px",
-    marginTop: "8px",
-  },
-  editActions: {
-    display: "flex",
-    gap: "10px",
-    marginTop: "14px",
-  },
-  cancelButton: {
-    minHeight: "var(--tap-target-min)",
-    padding: "0 16px",
-    border: "1px solid var(--color-primary)",
-    borderRadius: "8px",
-    background: "var(--color-base)",
-    color: "var(--color-primary)",
-    fontSize: "15px",
-    fontWeight: 700,
-    cursor: "pointer",
-    flexShrink: 0,
-  },
-  label: {
-    display: "block",
-    fontSize: "13px",
-    fontWeight: 700,
-    margin: "14px 0 6px",
-  },
-  textInput: {
-    width: "100%",
-    minHeight: "var(--tap-target-min)",
-    padding: "0 12px",
-    border: "1px solid var(--color-primary)",
-    borderRadius: "8px",
-    background: "var(--color-base)",
-    color: "var(--color-text)",
-    fontSize: "16px",
-    boxSizing: "border-box" as const,
-  },
-  amountRow: {
-    display: "flex",
-    gap: "8px",
-    alignItems: "center",
-    marginBottom: "8px",
-  },
-  select: {
-    flex: "1 1 auto",
-    minHeight: "var(--tap-target-min)",
-    padding: "0 8px",
-    border: "1px solid var(--color-primary)",
-    borderRadius: "8px",
-    background: "var(--color-base)",
-    color: "var(--color-text)",
-    fontSize: "14px",
-  },
-  amountInput: {
-    width: "88px",
-    minHeight: "var(--tap-target-min)",
-    padding: "0 10px",
-    border: "1px solid var(--color-primary)",
-    borderRadius: "8px",
-    background: "var(--color-base)",
-    color: "var(--color-text)",
-    fontSize: "16px",
-  },
-  removeRow: {
-    minWidth: "var(--tap-target-min)",
-    minHeight: "var(--tap-target-min)",
-    border: "none",
-    background: "transparent",
-    color: "var(--color-subtext)",
-    fontSize: "20px",
-    cursor: "pointer",
-  },
-  addRow: {
-    minHeight: "var(--tap-target-min)",
-    padding: "0 14px",
-    border: "1px dashed var(--color-primary)",
     borderRadius: "8px",
     background: "var(--color-base)",
     color: "var(--color-primary)",
