@@ -33,11 +33,13 @@ export function BulletBar({ percent, label, height = 10 }: Props) {
       }}
     >
       <div
+        className="bar-fill-animate"
         style={{
           position: "absolute",
           inset: "0 auto 0 0",
           width: `${fillPercent}%`,
-          background: "var(--color-primary)",
+          background:
+            "linear-gradient(90deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 62%, #ffffff))",
         }}
       />
       {overflowPercent > 0 && (
