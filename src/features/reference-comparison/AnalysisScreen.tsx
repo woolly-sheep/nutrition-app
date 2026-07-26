@@ -16,12 +16,14 @@ import {
   NutrientBarRow,
   SplitLegend,
 } from "./AnalysisRows";
+import { StatusSummary } from "./StatusSummary";
+import { buildNutrientBarGroups } from "../../domain/analysis/nutrientStatusGroups";
 
 /**
  * 分析タブ・日次 (UI design v0.1 §4.3 + v0.2 addendum §3):
- * UL section (7a, hidden when empty) → RDA/AI bullet bars →
- * DG overage (6b, hidden when empty) → link to the day's records.
- * Row renderers live in AnalysisRows.
+ * status summary tally (issue #57) → UL section (7a, hidden when empty) →
+ * RDA/AI bars grouped 不足を優先 → 目安圏内 → 達成 → DG overage (6b) →
+ * link to the day's records. Row renderers live in AnalysisRows.
  */
 
 export function AnalysisScreen() {
@@ -97,7 +99,17 @@ export function AnalysisScreen() {
   }
 
   const { summary } = data;
-  const bars = [...summary.achieved, ...summary.insufficient];
+  const barGroups = buildNutrientBarGroups({
+    achieved: summary.achieved,
+    insufficient: summary.insufficient,
+  });
+  // 上限注意 tally jumps to whichever exceedance section is shown first.
+  const attentionHref =
+    summary.ul_reached.length > 0
+      ? "#sec-ul"
+      : summary.dg_over.length > 0
+        ? "#sec-dg"
+        : undefined;
 
   return (
     <div>
@@ -110,8 +122,17 @@ export function AnalysisScreen() {
         <h1 style={{ ...styles.title, margin: "4px 0 0" }}>基準値との比較</h1>
       </header>
 
+      <StatusSummary
+        comparableCount={summary.comparable_count}
+        atLeast80Count={summary.at_least_80_count}
+        achievedCount={summary.achieved.length}
+        ulReachedCount={summary.ul_reached.length}
+        dgOverCount={summary.dg_over.length}
+        attentionHref={attentionHref}
+      />
+
       {summary.ul_reached.length > 0 && (
-        <section style={styles.ulSection}>
+        <section id="sec-ul" style={styles.ulSection}>
           <h2 style={styles.sectionTitle}>
             耐容上限量(UL)に達した項目 {summary.ul_reached.length}件
           </h2>
@@ -125,8 +146,20 @@ export function AnalysisScreen() {
         <h2 style={styles.sectionTitle}>基準値比較（推奨量・目安量）</h2>
         <p style={styles.tapHint}>栄養素をタップすると食材別の内訳が開きます。</p>
         {data.has_supplements && <SplitLegend />}
-        {bars.map((item) => (
-          <NutrientBarRow key={item.nutrient_code} item={item} date={data.date} />
+        {barGroups.map((group) => (
+          <div key={group.status} id={`grp-${group.status}`}>
+            <h3 style={styles.groupHeader}>
+              <span>{group.label}</span>
+              <span style={styles.groupCount}>{group.items.length}</span>
+            </h3>
+            {group.items.map((item) => (
+              <NutrientBarRow
+                key={item.nutrient_code}
+                item={item}
+                date={data.date}
+              />
+            ))}
+          </div>
         ))}
       </section>
 
@@ -159,7 +192,7 @@ export function AnalysisScreen() {
       )}
 
       {summary.dg_over.length > 0 && (
-        <section style={{ marginTop: "24px" }}>
+        <section id="sec-dg" style={{ marginTop: "24px" }}>
           <h2 style={styles.sectionTitle}>目標量(DG)を上回っているもの</h2>
           {summary.dg_over.map((item) => (
             <ExceedanceRow key={item.nutrient_code} item={item} kind="dg" />
@@ -212,6 +245,28 @@ function formatJapaneseDate(isoDate: string): string {
 const styles = {
   title: { fontSize: "20px", margin: 0 },
   sectionTitle: { fontSize: "15px", margin: "0 0 10px" },
+  groupHeader: {
+    position: "sticky" as const,
+    top: 0,
+    zIndex: 1,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    gap: "8px",
+    margin: "18px 0 10px",
+    padding: "6px 0",
+    background: "var(--color-base)",
+    borderBottom: "1px solid var(--color-surface)",
+    fontSize: "12px",
+    fontWeight: 700,
+    letterSpacing: "0.06em",
+    color: "var(--color-subtext)",
+  },
+  groupCount: {
+    fontFamily: "var(--font-numeric)",
+    color: "var(--color-primary-deep)",
+    fontSize: "13px",
+  },
   backupSummary: {
     minHeight: "var(--tap-target-min)",
     display: "flex",
