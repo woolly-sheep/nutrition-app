@@ -5,14 +5,20 @@ import {
   type WeeklyNutrient,
 } from "../../../domain/analysis/summarizeWeeklyIntake";
 import { calculateNutrientIntake } from "../../../domain/nutrient/calculateNutrientIntake";
+import {
+  combineIntake,
+  sumSupplementIntake,
+} from "../../../domain/nutrient/supplementIntake";
 import { judgeAgainstReference } from "../../../domain/reference/judgeAgainstReference";
 import { DISCLAIMER } from "../../../domain/wording/safeWording";
 import { loadSeed } from "../../../seed/loadSeed";
 import type { Seed } from "../../../seed/types";
 import { listMeals } from "../../store/mealStore";
+import { listSupplements } from "../../store/supplementStore";
 import { readProfile, type StoredProfile } from "../../store/profileStore";
 import { resolveProfileForDate } from "../profileResolution";
 import type { MealRecord } from "../schemas/meals";
+import type { SupplementRecord } from "../schemas/supplements";
 import {
   DATA_SOURCES,
   type WeeklyAnalysisResponse,
@@ -23,6 +29,7 @@ type Dependencies = {
   seed?: Seed;
   loadProfile?: () => Promise<StoredProfile | null>;
   loadMeals?: (date: string) => Promise<MealRecord[]>;
+  loadSupplements?: (date: string) => Promise<SupplementRecord[]>;
 };
 
 /**
@@ -36,6 +43,7 @@ export async function getWeeklyAnalysis(
     seed = loadSeed(),
     loadProfile = readProfile,
     loadMeals = listMeals,
+    loadSupplements = listSupplements,
   }: Dependencies = {},
 ): Promise<WeeklyAnalysisResponse> {
   const { weekStart, weekEnd, evaluatedDates } = weekWindow(date);
@@ -99,12 +107,17 @@ export async function getWeeklyAnalysis(
       return null;
     }
     const calculation = calculateNutrientIntake(items, seed.nutrientAmount);
-    const intakeByCode = new Map(
+    const foodByCode = new Map(
       calculation.totals.map((total) => [
         total.nutrientCode,
         total.totalAmount,
       ]),
     );
+    // Fold in self-reported supplements so weekly fulfilment matches the
+    // daily view (issue #67) — the judgment uses combined intake, same as
+    // getDailyAnalysis (decision-20260724-supplement-intake).
+    const supplementByCode = sumSupplementIntake(await loadSupplements(dayDate));
+    const intakeByCode = combineIntake(foodByCode, supplementByCode);
     // Band resolved per day: a birthday inside the week shifts it.
     const resolved = resolveProfileForDate(dayProfile, dayDate);
     if (!resolved.ok) {

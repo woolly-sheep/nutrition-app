@@ -87,4 +87,42 @@ describe("getWeeklyAnalysis", () => {
     expect(result.profile_required).toBe(true);
     expect(result.nutrients).toHaveLength(0);
   });
+
+  it("folds self-reported supplements into the fulfilment (#67)", async () => {
+    const args = {
+      seed,
+      loadProfile: async () => profile,
+      loadMeals: async (date: string) =>
+        date === "2026-07-15"
+          ? [meal("2026-07-15", [{ food_id: "food_kiwi_raw_001", intake_g: 50 }])]
+          : [],
+    };
+    const foodOnly = await getWeeklyAnalysis("2026-07-15", {
+      ...args,
+      loadSupplements: async () => [],
+    });
+    const withSupplement = await getWeeklyAnalysis("2026-07-15", {
+      ...args,
+      loadSupplements: async (date: string) =>
+        date === "2026-07-15"
+          ? [
+              {
+                supplement_id: "sup_1",
+                date: "2026-07-15",
+                product_name: "ビタミンC",
+                amounts: [{ nutrient_code: "vitamin_c_mg", amount: 500 }],
+                recorded_at: "2026-07-15T00:00:00.000Z",
+              },
+            ]
+          : [],
+    });
+    const cOf = (r: typeof foodOnly) =>
+      r.nutrients.find((n) => n.nutrient_code === "vitamin_c_mg");
+    const before = cOf(foodOnly);
+    const after = cOf(withSupplement);
+    expect(before).toBeDefined();
+    expect(after).toBeDefined();
+    // The supplement adds vitamin C, so weekly fulfilment must rise.
+    expect(after!.average_percent).toBeGreaterThan(before!.average_percent);
+  });
 });
