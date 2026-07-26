@@ -15,6 +15,9 @@ import { NutrientFinder } from "../food-search/NutrientFinder";
 import { SupplementPanel } from "./SupplementPanel";
 import { RecipeSection } from "./RecipeSection";
 import { SavedMealsList } from "./SavedMealsList";
+import { UsualFoodsSection } from "./UsualFoodsSection";
+import { ShortfallCandidatesSection } from "./ShortfallCandidatesSection";
+import { DraftMealSection } from "./DraftMealSection";
 
 /**
  * 記録 tab (UI design v0.1 §4.2 + v0.3 addendum). Search + grams input +
@@ -44,8 +47,6 @@ export function MealEntryScreen() {
   const [date, setDate] = useState<string>(todayIsoDate());
   const [savedMeals, setSavedMeals] = useState<readonly DayMeal[]>([]);
   const [recipes, setRecipes] = useState<readonly RecipeView[]>([]);
-  const [recipeName, setRecipeName] = useState("");
-  const [savingRecipe, setSavingRecipe] = useState(false);
 
   const today = todayIsoDate();
 
@@ -148,39 +149,6 @@ export function MealEntryScreen() {
     setSaveState("idle");
   };
 
-  // Register the current draft as a reusable recipe (food_id + grams only;
-  // nutrition is recomputed from the seed whenever it is shown or logged).
-  const canSaveRecipe =
-    draftItems.length > 0 && recipeName.trim() !== "" && !savingRecipe;
-  const handleSaveRecipe = async () => {
-    if (!canSaveRecipe) {
-      return;
-    }
-    setSavingRecipe(true);
-    try {
-      const response = await fetch("/api/recipes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: recipeName.trim(),
-          items: draftItems.map((item) => ({
-            food_id: item.foodId,
-            intake_g: item.intakeG,
-          })),
-        }),
-      });
-      if (response.ok) {
-        setRecipeName("");
-        void loadShortcuts();
-      }
-    } catch {
-      // keep the draft as-is so the user can retry
-    } finally {
-      setSavingRecipe(false);
-    }
-  };
-
-
   const handleRemove = (index: number) => {
     setDraftItems(draftItems.filter((_, i) => i !== index));
   };
@@ -279,43 +247,12 @@ export function MealEntryScreen() {
         </div>
       </details>
 
-      {usual !== null && usual.items.length > 0 && (
-        <section style={{ marginTop: "24px" }}>
-          <h2 style={styles.sectionTitle}>
-            いつもの{MEAL_TYPE_LABELS[mealType]}
-            <span style={styles.sectionHint}>（最近の記録から）</span>
-          </h2>
-          <ul style={styles.shortcutList}>
-            {usual.items.map((item) => (
-              <li key={item.food_id} style={styles.shortcutRow}>
-                <span style={{ flex: 1 }}>
-                  {item.display_name} {item.intake_g}g
-                  {item.estimated_kcal !== null && (
-                    <span style={styles.subtext}>
-                      {" "}
-                      {Math.round(item.estimated_kcal)} kcal
-                    </span>
-                  )}
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleAdd({
-                      foodId: item.food_id,
-                      displayName: item.display_name,
-                      intakeG: item.intake_g,
-                      estimatedKcal: item.estimated_kcal,
-                    })
-                  }
-                  aria-label={`${item.display_name}を追加`}
-                  style={styles.shortcutAdd}
-                >
-                  ＋
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {usual !== null && (
+        <UsualFoodsSection
+          mealTypeLabel={MEAL_TYPE_LABELS[mealType]}
+          items={usual.items}
+          onAdd={handleAdd}
+        />
       )}
 
       <RecipeSection
@@ -324,113 +261,13 @@ export function MealEntryScreen() {
         onChanged={() => void loadShortcuts()}
       />
 
-      {candidates !== null &&
-        candidates.has_analysis &&
-        candidates.candidates.length > 0 && (
-          <section style={{ marginTop: "24px" }}>
-            <h2 style={styles.sectionTitle}>不足を補う候補</h2>
-            <ul style={styles.shortcutList}>
-              {candidates.candidates.map((candidate) => (
-                <li
-                  key={`${candidate.target_nutrient_code}-${candidate.food_id}`}
-                  style={styles.shortcutRow}
-                >
-                  <span style={{ flex: 1 }}>
-                    {candidate.display_name}{" "}
-                    {candidate.portion_label ?? `${candidate.portion_g}g`}
-                    {candidate.estimated_kcal !== null && (
-                      <span style={styles.subtext}>
-                        {" "}
-                        {Math.round(candidate.estimated_kcal)} kcal
-                      </span>
-                    )}
-                    <span style={styles.subtext}>
-                      {" · "}
-                      {candidate.target_nutrient_name}不足分の約
-                      {Math.round(candidate.percent_of_shortfall)}%
-                    </span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleAdd({
-                        foodId: candidate.food_id,
-                        displayName: candidate.display_name,
-                        intakeG: candidate.portion_g,
-                        estimatedKcal: candidate.estimated_kcal,
-                      })
-                    }
-                    aria-label={`${candidate.display_name}を追加`}
-                    style={styles.shortcutAdd}
-                  >
-                    ＋追加
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <p style={styles.subtext}>{candidates.notice}</p>
-          </section>
-        )}
+      <ShortfallCandidatesSection candidates={candidates} onAdd={handleAdd} />
 
-      <section style={{ marginTop: "24px" }}>
-        <h2 style={styles.sectionTitle}>この食事に追加済み</h2>
-        {draftItems.length === 0 ? (
-          <p style={styles.subtext}>
-            検索から食品を追加すると、ここに保存前の内容が表示されます。
-          </p>
-        ) : (
-          <ul style={styles.draftList}>
-            {draftItems.map((item, index) => (
-              <li key={`${item.foodId}-${index}`} style={styles.draftRow}>
-                <span>
-                  {item.displayName} {item.intakeG}g
-                </span>
-                <span style={styles.subtext}>
-                  {item.estimatedKcal !== null &&
-                    `約 ${Math.round(item.estimatedKcal)} kcal`}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleRemove(index)}
-                  aria-label={`${item.displayName}を取り消す`}
-                  style={styles.removeButton}
-                >
-                  取消
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {draftItems.length > 0 && (
-          <div style={styles.recipeSaveBox}>
-            <p style={styles.subtext}>
-              この内容を料理として登録すると、次回から名前でまとめて追加できます。
-            </p>
-            <div style={styles.recipeSaveRow}>
-              <input
-                type="text"
-                value={recipeName}
-                onChange={(event) => setRecipeName(event.target.value)}
-                placeholder="料理名（例: いつもの朝食）"
-                maxLength={100}
-                aria-label="料理名"
-                style={styles.recipeNameInput}
-              />
-              <button
-                type="button"
-                onClick={() => void handleSaveRecipe()}
-                disabled={!canSaveRecipe}
-                style={{
-                  ...styles.shortcutAdd,
-                  opacity: canSaveRecipe ? 1 : 0.5,
-                }}
-              >
-                料理として登録
-              </button>
-            </div>
-          </div>
-        )}
-      </section>
+      <DraftMealSection
+        draftItems={draftItems}
+        onRemove={handleRemove}
+        onRecipeSaved={() => void loadShortcuts()}
+      />
 
       <button
         type="button"
@@ -527,7 +364,6 @@ const styles = {
     fontSize: "14px",
     cursor: "pointer",
   },
-  sectionTitle: { fontSize: "15px", margin: "0 0 8px" },
   finderSummary: {
     minHeight: "var(--tap-target-min)",
     display: "flex",
@@ -536,79 +372,6 @@ const styles = {
     fontSize: "14px",
     color: "var(--color-primary)",
     fontWeight: 700,
-  },
-  sectionHint: {
-    fontSize: "12px",
-    fontWeight: 400,
-    color: "var(--color-subtext)",
-  },
-  shortcutList: { listStyle: "none", margin: 0, padding: 0 },
-  shortcutRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    minHeight: "var(--tap-target-min)",
-    padding: "4px 0",
-    borderBottom: "1px solid var(--color-surface)",
-    fontSize: "14px",
-  },
-  shortcutAdd: {
-    minHeight: "var(--tap-target-min)",
-    minWidth: "var(--tap-target-min)",
-    padding: "0 12px",
-    border: "1px solid var(--color-primary)",
-    borderRadius: "8px",
-    background: "var(--color-base)",
-    color: "var(--color-primary)",
-    fontSize: "14px",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  recipeSaveBox: {
-    marginTop: "12px",
-    paddingTop: "12px",
-    borderTop: "1px solid var(--color-surface)",
-  },
-  recipeSaveRow: {
-    display: "flex",
-    gap: "8px",
-    alignItems: "center",
-    marginTop: "8px",
-  },
-  recipeNameInput: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: "var(--tap-target-min)",
-    padding: "0 12px",
-    border: "1px solid var(--color-primary)",
-    borderRadius: "8px",
-    background: "var(--color-base)",
-    color: "var(--color-text)",
-    fontSize: "16px",
-    boxSizing: "border-box" as const,
-  },
-  draftList: { listStyle: "none", margin: 0, padding: 0 },
-  draftRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    justifyContent: "space-between",
-    minHeight: "var(--tap-target-min)",
-    padding: "8px 12px",
-    marginBottom: "8px",
-    // 5a add-preview coding: unsaved = dashed & translucent
-    border: "1px dashed var(--color-primary)",
-    borderRadius: "8px",
-    background: "rgba(47, 140, 126, 0.08)",
-  },
-  removeButton: {
-    minHeight: "var(--tap-target-min)",
-    padding: "0 12px",
-    border: "none",
-    borderRadius: "8px",
-    background: "transparent",
-    color: "var(--color-subtext)",
-    cursor: "pointer",
   },
   saveButton: {
     width: "100%",
