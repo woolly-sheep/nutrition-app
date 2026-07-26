@@ -41,11 +41,13 @@ export function SplitBar({ foodPercent, totalPercent, label, height = 12 }: Prop
       }}
     >
       <div
+        className="bar-fill-animate"
         style={{
           position: "absolute",
           inset: "0 auto 0 0",
           width: `${Math.min(food, 100)}%`,
-          background: "var(--color-primary)",
+          background:
+            "linear-gradient(90deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 62%, #ffffff))",
         }}
       />
       {supplementWidth > 0 && (
