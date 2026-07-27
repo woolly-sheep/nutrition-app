@@ -5,14 +5,25 @@
  */
 
 :root {
-  /* 2.1 Color palette (07 Recommended UI Palette) */
-  --color-base: #fffdfc; /* screen background */
-  --color-surface: #ddf7f5; /* soft cards / info callouts only */
-  --color-primary: #2f8c7e; /* CTA, selection, progress, intake */
-  --color-primary-deep: #206b60; /* hover, >100% overage fill */
+  /*
+   * 2.1 Color palette — "そよ風ガーデン / Fresh" warmth pass (2026-07).
+   * Same meanings as ui_design v0.1 (07 Recommended UI Palette); only the
+   * temperature moved: a slightly warmer cream base and a livelier, greener
+   * teal so the app reads fresh/alive rather than clinical. Red is still
+   * absent; gold is still achievement-only. See design-system §7.
+   */
+  --color-base: #fffdf8; /* screen background — warm cream */
+  --color-surface: #d7f3ea; /* soft cards / info callouts only — fresh mint */
+  --color-primary: #1f9e83; /* CTA, selection, progress, intake — livelier teal */
+  --color-primary-deep: #137a64; /* hover, >100% overage fill */
   --color-accent: #f4c23a; /* achievement badges/chips ONLY */
-  --color-text: #202a2c;
-  --color-subtext: #6a7776;
+  --color-text: #1c2b28;
+  --color-subtext: #5f7370;
+  /* Decorative-only cool accent (NOT a status colour) — friendly highlights
+   * such as eyebrows / non-status friendly notes. Never used for 不足/上限/警告. */
+  --color-sky: #5db4cc;
+  --color-sky-soft: rgba(93, 180, 204, 0.16);
+  --color-sky-ink: #2a7f97;
 
   /*
    * Derived semantics (#86 / #88). The soft-accent trio is a quieter dress
@@ -24,8 +35,8 @@
   --color-accent-soft: rgba(244, 194, 58, 0.16); /* achievement chip ground */
   --color-accent-line: rgba(199, 154, 18, 0.45); /* achievement chip border */
   --color-accent-ink: #a9790c; /* achievement chip text/✓ */
-  --color-emphasis-line: rgba(47, 140, 126, 0.55); /* attention tile border */
-  --color-emphasis-fill: rgba(47, 140, 126, 0.06); /* attention tile ground */
+  --color-emphasis-line: rgba(31, 158, 131, 0.55); /* attention tile border */
+  --color-emphasis-fill: rgba(31, 158, 131, 0.06); /* attention tile ground */
 
   /* 2.2 Typography */
   --font-ui: "Noto Sans JP", sans-serif;

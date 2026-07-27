@@ -11,8 +11,9 @@ import type { ContributionFoodItem } from "../server/api/schemas/analysis";
  * variant "detailed" = analysis panel (list legend with amount + %).
  */
 
-const SEGMENT_TINTS = ["#2f8c7e", "#6fb7ab", "#a7d6ce"];
-const OTHER_TINT = "#e0efec";
+// Fresh-garden teal ramp (matches --color-primary #1f9e83).
+const SEGMENT_TINTS = ["#1f9e83", "#63bda8", "#a3dccf"];
+const OTHER_TINT = "#dcefe9";
 
 type Props = {
   foods: readonly ContributionFoodItem[];

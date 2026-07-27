@@ -69,8 +69,8 @@ export function BloomFlower({ petals, overall }: Props) {
             skeuomorphic gloss. Petals / figure / colour semantics are unchanged. */}
         <radialGradient id="bloom-jewel" cx="42%" cy="38%" r="70%">
           <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="55%" stopColor="#eafaf8" />
-          <stop offset="100%" stopColor="#cdeee9" />
+          <stop offset="55%" stopColor="#e6f8f0" />
+          <stop offset="100%" stopColor="#c4ecdd" />
         </radialGradient>
         <filter id="bloom-jewel-inner" x="-40%" y="-40%" width="180%" height="180%">
           <feDropShadow dx="0" dy="1.4" stdDeviation="1.6" floodColor="var(--color-primary-deep)" floodOpacity="0.28" />

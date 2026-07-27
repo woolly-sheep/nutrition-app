@@ -130,7 +130,7 @@ const styles = {
     // 5a add-preview coding: unsaved = dashed & translucent
     border: "1px dashed var(--color-primary)",
     borderRadius: "var(--radius-sm)",
-    background: "rgba(47, 140, 126, 0.08)",
+    background: "rgba(31, 158, 131, 0.08)",
   },
   removeButton: {
     minHeight: "var(--tap-target-min)",
