@@ -18,9 +18,18 @@ type Props = {
   date: string;
   /** Called after a dose is logged so the parent can refresh saved records. */
   onLogged: () => void;
+  /**
+   * Bumped by the parent when a product was registered elsewhere (e.g. from
+   * the free-form entry's「製品として登録」), so this list reloads to show it.
+   */
+  refreshSignal?: number;
 };
 
-export function SupplementProductManager({ date, onLogged }: Props) {
+export function SupplementProductManager({
+  date,
+  onLogged,
+  refreshSignal,
+}: Props) {
   const [products, setProducts] = useState<readonly SupplementProduct[]>([]);
   const [doseText, setDoseText] = useState<Record<string, string>>({});
   const [creating, setCreating] = useState(false);
@@ -40,7 +49,7 @@ export function SupplementProductManager({ date, onLogged }: Props) {
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, refreshSignal]);
 
   const handleDeleteProduct = async (id: string) => {
     try {
@@ -84,27 +93,11 @@ export function SupplementProductManager({ date, onLogged }: Props) {
     }
   };
 
-  return (
-    <div style={styles.wrap}>
-      <p style={styles.heading}>登録した製品</p>
-
-      {editing === null && (
-        <SupplementProductList
-          products={products}
-          doseText={doseText}
-          onDoseChange={(productId, value) =>
-            setDoseText((prev) => ({ ...prev, [productId]: value }))
-          }
-          onLog={(product) => void handleLog(product)}
-          onEdit={(product) => {
-            setCreating(false);
-            setEditing(product);
-          }}
-          onDelete={(id) => void handleDeleteProduct(id)}
-        />
-      )}
-
-      {editing !== null ? (
+  // Editing takes over the whole panel so the prefilled form is unmissable.
+  if (editing !== null) {
+    return (
+      <div style={styles.wrap}>
+        <p style={styles.heading}>登録した製品</p>
         <SupplementProductForm
           product={editing}
           onSaved={() => {
@@ -113,23 +106,49 @@ export function SupplementProductManager({ date, onLogged }: Props) {
           }}
           onCancel={() => setEditing(null)}
         />
-      ) : creating ? (
-        <SupplementProductForm
-          onSaved={() => {
-            setCreating(false);
-            void load();
-          }}
-          onCancel={() => setCreating(false)}
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setCreating(true)}
-          style={styles.addProduct}
-        >
-          ＋ 製品を登録
-        </button>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.wrap}>
+      <p style={styles.heading}>登録した製品（飲んだ数で記録）</p>
+
+      <SupplementProductList
+        products={products}
+        doseText={doseText}
+        onDoseChange={(productId, value) =>
+          setDoseText((prev) => ({ ...prev, [productId]: value }))
+        }
+        onLog={(product) => void handleLog(product)}
+        onEdit={(product) => setEditing(product)}
+        onDelete={(id) => void handleDeleteProduct(id)}
+      />
+
+      {/* #62: registering a new product is the occasional task — keep it out of
+          the main dose-logging flow behind a 折りたたみ. */}
+      <details style={styles.manage}>
+        <summary style={styles.manageSummary}>製品を管理</summary>
+        <div style={{ marginTop: "8px" }}>
+          {creating ? (
+            <SupplementProductForm
+              onSaved={() => {
+                setCreating(false);
+                void load();
+              }}
+              onCancel={() => setCreating(false)}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCreating(true)}
+              style={styles.addProduct}
+            >
+              ＋ 製品を登録
+            </button>
+          )}
+        </div>
+      </details>
     </div>
   );
 }
@@ -142,6 +161,16 @@ const styles = {
     marginBottom: "16px",
   },
   heading: { fontSize: "14px", fontWeight: 700, margin: "0 0 8px" },
+  manage: { marginTop: "12px", borderTop: "1px solid var(--color-surface)", paddingTop: "8px" },
+  manageSummary: {
+    minHeight: "var(--tap-target-min)",
+    display: "flex",
+    alignItems: "center",
+    cursor: "pointer",
+    fontSize: "13px",
+    fontWeight: 700,
+    color: "var(--color-primary)",
+  },
   addProduct: {
     minHeight: "var(--tap-target-min)",
     marginTop: "10px",
