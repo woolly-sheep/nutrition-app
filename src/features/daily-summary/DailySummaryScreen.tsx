@@ -179,9 +179,13 @@ export function DailySummaryScreen() {
         {summary.achieved.length > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
             {summary.achieved.map((item) => (
+              // #75: the ✓ gold chip already means 達成 (≥基準値). Showing the
+              // raw multiplier (e.g. 514%) celebrated over-supply and implied
+              // "more is better" — against the fact-only stance. The exact
+              // intake vs reference stays available on the 分析タブ bars.
               <AchievementBadge
                 key={item.nutrient_code}
-                text={`${item.nutrient_name} ${Math.round(item.percent_of_reference ?? 0)}%`}
+                text={`${item.nutrient_name} 達成`}
               />
             ))}
           </div>
