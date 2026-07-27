@@ -101,7 +101,7 @@ const styles = {
   stack: {
     display: "flex",
     height: "12px",
-    borderRadius: "999px",
+    borderRadius: "var(--radius-pill)",
     overflow: "hidden",
     background: "var(--color-surface)",
   },

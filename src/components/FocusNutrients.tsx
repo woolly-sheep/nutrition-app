@@ -185,7 +185,7 @@ function clampPercent(value: number): number {
 const styles = {
   card: {
     background: "var(--color-surface)",
-    borderRadius: "14px",
+    borderRadius: "var(--radius-lg)",
     padding: "14px 16px",
     margin: "14px 0 6px",
   },
@@ -236,7 +236,7 @@ const styles = {
     flex: 1,
     height: "7px",
     background: "var(--color-base)",
-    borderRadius: "999px",
+    borderRadius: "var(--radius-pill)",
     boxShadow: "inset 0 0 0 1px rgba(32,42,44,0.06)",
   },
   fill: {
@@ -245,14 +245,14 @@ const styles = {
     top: 0,
     height: "100%",
     background: "var(--color-primary)",
-    borderRadius: "999px",
+    borderRadius: "var(--radius-pill)",
   },
   band: {
     position: "absolute",
     top: 0,
     height: "100%",
     background: BAND,
-    borderRadius: "999px",
+    borderRadius: "var(--radius-pill)",
   },
   marker: {
     position: "absolute",

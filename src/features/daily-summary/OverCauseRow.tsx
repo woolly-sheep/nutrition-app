@@ -143,7 +143,7 @@ const styles = {
     padding: "10px 12px",
     background: "var(--color-base)",
     border: "1px solid var(--color-surface)",
-    borderRadius: "12px",
+    borderRadius: "var(--radius-md)",
   },
   panelTitle: {
     fontSize: "11px",

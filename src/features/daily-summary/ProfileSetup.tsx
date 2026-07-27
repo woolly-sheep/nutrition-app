@@ -71,7 +71,7 @@ export function ProfileSetup({ disclaimer, onSaved }: Props) {
       <section
         style={{
           padding: "12px 16px",
-          borderRadius: "10px",
+          borderRadius: "var(--radius-md)",
           background: "var(--color-surface)",
         }}
       >
@@ -156,7 +156,7 @@ export function ProfileSetup({ disclaimer, onSaved }: Props) {
           minHeight: "var(--tap-target-min)",
           marginTop: "8px",
           border: "none",
-          borderRadius: "8px",
+          borderRadius: "var(--radius-sm)",
           background: "var(--color-primary)",
           color: "var(--color-base)",
           fontSize: "16px",
@@ -211,7 +211,7 @@ function optionStyle(selected: boolean): React.CSSProperties {
     minHeight: "var(--tap-target-min)",
     padding: "0 14px",
     border: "1px solid var(--color-primary)",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-sm)",
     background: selected ? "var(--color-primary)" : "var(--color-base)",
     color: selected ? "var(--color-base)" : "var(--color-text)",
     fontSize: "14px",
@@ -240,7 +240,7 @@ const styles = {
     minHeight: "var(--tap-target-min)",
     padding: "0 12px",
     border: "1px solid var(--color-primary)",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-sm)",
     background: "var(--color-base)",
     color: "var(--color-text)",
     fontSize: "16px",
