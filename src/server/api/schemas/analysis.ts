@@ -244,6 +244,29 @@ export type NutrientTrendResponse = {
   sources: readonly string[];
 };
 
+/** One nutrient's trend series in the batch response (#92). */
+export type NutrientTrendSeries = {
+  nutrient_code: string;
+  /** Oldest → newest; missing days null, never zero-filled. */
+  points: readonly NutrientTrendPoint[];
+};
+
+/**
+ * Batch trends for the 分析タブ sparklines (#92): every comparable nutrient's
+ * fulfilment over the window, built in a single window pass. `date`/`window_days`
+ * describe the request; the per-nutrient percent is normalised to each day's
+ * reference, so 100% is a stable goal line across age-band shifts.
+ */
+export type NutrientTrendsResponse = {
+  date: string;
+  window_days: number;
+  /** true when no profile is set — nutrients is empty. */
+  profile_required: boolean;
+  nutrients: readonly NutrientTrendSeries[];
+  notice: string;
+  sources: readonly string[];
+};
+
 export const DATA_SOURCES = [
   "日本食品標準成分表(八訂)増補2023年",
   "日本人の食事摂取基準(2025年版)",

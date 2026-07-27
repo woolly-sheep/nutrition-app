@@ -18,9 +18,12 @@ const MAX_PERCENT = 150; // clamp so a single big day doesn't flatten the rest
 
 type Props = {
   points: readonly NutrientTrendPoint[];
+  /** Rendered height in px; the viewBox is fixed so the goal line stays
+   * proportional. Compact inline rows (分析タブ #92) pass a smaller value. */
+  height?: number;
 };
 
-export function Sparkline({ points }: Props) {
+export function Sparkline({ points, height = HEIGHT }: Props) {
   const recorded = points
     .map((point, index) => ({ point, index }))
     .filter((entry) => entry.point.percent !== null);
@@ -51,7 +54,7 @@ export function Sparkline({ points }: Props) {
   return (
     <svg
       width="100%"
-      height={HEIGHT}
+      height={height}
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       preserveAspectRatio="none"
       role="img"
