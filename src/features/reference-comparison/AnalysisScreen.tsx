@@ -13,6 +13,7 @@ import { AGE_BAND_LABELS, SEX_LABELS } from "../daily-summary/ProfileSetup";
 import { BackupPanel } from "../../components/BackupPanel";
 import { MonthGarden } from "../../components/MonthGarden";
 import { WeeklyReport } from "./WeeklyReport";
+import { FoodExplorer } from "../food-explorer/FoodExplorer";
 import {
   ExceedanceRow,
   FoodUntrackedRow,
@@ -95,6 +96,19 @@ export function AnalysisScreen() {
       </div>
     );
   }
+
+  // 食材を調べる: a read-only lookup, useful with or without today's records.
+  const foodExplorerSection = (
+    <section style={{ marginTop: "24px" }}>
+      <p style={styles.exploreKicker}>食材を調べる</p>
+      <h2 style={styles.sectionTitle}>栄養価を見る</h2>
+      <p style={styles.exploreHint}>
+        食品を選ぶと、100gあたりの栄養価（成分表の値）が見られます。
+      </p>
+      <FoodExplorer />
+    </section>
+  );
+
   if (!data.has_records || data.summary === null) {
     return (
       <div>
@@ -106,6 +120,7 @@ export function AnalysisScreen() {
         <Link href={`/meals?date=${data.date}`} style={styles.link}>
           食事を記録する →
         </Link>
+        {foodExplorerSection}
         <WeeklyReport date={data.date} />
         <MonthGarden date={data.date} />
         <details style={{ marginTop: "24px" }}>
@@ -244,6 +259,8 @@ export function AnalysisScreen() {
 
       <MonthGarden date={data.date} />
 
+      {foodExplorerSection}
+
       <details style={{ marginTop: "24px" }}>
         <summary style={styles.backupSummary}>基準の区分（生年月日・性別）</summary>
         <div style={{ marginTop: "10px" }}>
@@ -278,6 +295,20 @@ function formatJapaneseDate(isoDate: string): string {
 const styles = {
   title: { fontSize: "20px", margin: 0 },
   sectionTitle: { fontSize: "15px", margin: "0 0 10px" },
+  // Sky = decorative "explore" cue (not a status colour).
+  exploreKicker: {
+    fontSize: "11px",
+    letterSpacing: ".12em",
+    textTransform: "uppercase" as const,
+    color: "var(--color-sky-ink)",
+    fontWeight: 700,
+    margin: "0 0 4px",
+  },
+  exploreHint: {
+    fontSize: "12.5px",
+    color: "var(--color-subtext)",
+    margin: "0 0 12px",
+  },
   groupHeader: {
     position: "sticky" as const,
     top: 0,

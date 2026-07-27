@@ -73,6 +73,35 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/RichFoodsResponse" }
 
+  /api/foods/{food_id}/nutrients:
+    get:
+      tags: [foods]
+      summary: 食材ごとの栄養価（100gあたり・成分表の事実表示）
+      description: |
+        1食材の全栄養素を 100g あたりで返す（食材の栄養価ビュー）。値は
+        八訂成分表そのままで、非数値セル（Tr / (0) / -）は amount_label に
+        原文保持し amount_per_100g=null。区分設定時のみ各栄養素に
+        percent_of_reference（推奨量/目安量に対する参考値・100gあたり）を付す。
+        摂取の推奨ではない旨の notice を必ず含む。未知の食材は 404。
+      parameters:
+        - name: food_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: date
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: 区分（年齢帯）解決の基準日。省略時は当日。
+      responses:
+        "200":
+          description: 食材の栄養価（100gあたり）。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FoodNutrientsResponse" }
+        "404": { description: 指定された食材が見つかりません。 }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+
   /api/meals:
     get:
       tags: [meals]
@@ -813,6 +842,59 @@ components:
         message:
           type: string
           description: 0件時のみ。エラーではなく正常な検索結果。
+
+    FoodNutrientEntry:
+      type: object
+      required: [nutrient_code, nutrient_name, unit, amount_per_100g, amount_label, percent_of_reference, reference_type]
+      properties:
+        nutrient_code: { type: string }
+        nutrient_name: { type: string }
+        unit: { type: string }
+        amount_per_100g:
+          type: [number, "null"]
+          description: 数値の公式値。非数値セルは null（原文は amount_label）。
+        amount_label:
+          type: string
+          description: 表示用文字列。非数値（Tr /(0)/ -）は原文保持。
+        percent_of_reference:
+          type: [number, "null"]
+          description: 100gあたりの推奨量/目安量比。区分未設定・非比較は null。
+        reference_type:
+          type: [string, "null"]
+          description: percent の基準（rda/ai等）。無い場合 null。
+
+    FoodMacroEnergy:
+      type: object
+      required: [protein_percent, fat_percent, carbohydrate_percent]
+      properties:
+        protein_percent: { type: integer }
+        fat_percent: { type: integer }
+        carbohydrate_percent: { type: integer }
+
+    FoodNutrientsResponse:
+      type: object
+      required: [food_id, display_name, official_food_name, official_food_code, energy_kcal_per_100g, macro_energy, nutrients, profile_applied, notice, sources]
+      properties:
+        food_id: { type: string }
+        display_name: { type: string }
+        official_food_name: { type: string }
+        official_food_code: { type: string }
+        energy_kcal_per_100g: { type: [number, "null"] }
+        macro_energy:
+          oneOf:
+            - { $ref: "#/components/schemas/FoodMacroEnergy" }
+            - { type: "null" }
+          description: P/F/C の推定エネルギー比。三大栄養素が非数値なら null。
+        nutrients:
+          type: array
+          items: { $ref: "#/components/schemas/FoodNutrientEntry" }
+        profile_applied:
+          type: boolean
+          description: 区分適用時 true（percent_of_reference が入る）。
+        notice: { type: string }
+        sources:
+          type: array
+          items: { type: string }
 
     RichFoodItem:
       type: object
