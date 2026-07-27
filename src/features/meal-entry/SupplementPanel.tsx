@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { formatAmount } from "../../components/RemainingCard";
 import { type SupplementRecord } from "../../server/api/schemas/supplements";
 import { SupplementProductManager } from "./SupplementProductManager";
+import { SupplementProductForm } from "./SupplementProductForm";
 import { SupplementEditForm } from "./SupplementEditForm";
 import {
   SupplementAmountFields,
@@ -33,6 +34,10 @@ export function SupplementPanel({ date }: Props) {
     "idle",
   );
   const [editingId, setEditingId] = useState<string | null>(null);
+  // #62: free-form entry can be turned into a saved product; bump this so the
+  // preset list above reloads once it is registered.
+  const [registerAsProduct, setRegisterAsProduct] = useState(false);
+  const [productRefresh, setProductRefresh] = useState(0);
 
   const load = useCallback(async () => {
     try {
@@ -58,6 +63,10 @@ export function SupplementPanel({ date }: Props) {
     validAmounts.length > 0 &&
     !hasDuplicate &&
     saveState !== "saving";
+  // #62: promoting a free entry to a product needs the same valid name +
+  // amounts, but not the save-in-flight guard (that guards the record POST).
+  const canRegisterProduct =
+    productName.trim() !== "" && validAmounts.length > 0 && !hasDuplicate;
 
   const handleSave = async () => {
     if (!canSave) {
@@ -80,6 +89,7 @@ export function SupplementPanel({ date }: Props) {
       }
       setProductName("");
       setRows(emptyRows());
+      setRegisterAsProduct(false);
       setSaveState("idle");
       await load();
     } catch {
@@ -120,11 +130,15 @@ export function SupplementPanel({ date }: Props) {
         食品からの摂取とは分けて集計し、分析タブで内訳を表示します。
       </p>
 
-      <SupplementProductManager date={date} onLogged={() => void load()} />
+      <SupplementProductManager
+        date={date}
+        onLogged={() => void load()}
+        refreshSignal={productRefresh}
+      />
 
       <p style={styles.formHeading}>この日に記録したサプリ</p>
 
-      {saved.length > 0 && (
+      {saved.length > 0 ? (
         <ul style={styles.list}>
           {saved.map((record) => (
             <li key={record.supplement_id} style={styles.listItem}>
@@ -160,31 +174,75 @@ export function SupplementPanel({ date }: Props) {
             </li>
           ))}
         </ul>
+      ) : (
+        <p style={styles.note}>この日のサプリの記録はまだありません。</p>
       )}
 
-      <SupplementAmountFields
-        nameId="supplement-name"
-        productName={productName}
-        setProductName={setProductName}
-        placeholder="マルチビタミン など"
-        rows={rows}
-        setRows={setRows}
-        hasDuplicate={hasDuplicate}
-      />
+      {/* #62: registered products are the main flow above. Typing amounts by
+          hand is the occasional path, so keep it behind a 折りたたみ — with a
+          way to promote a one-off entry into a saved product. */}
+      <details style={styles.freeForm}>
+        <summary style={styles.freeFormSummary}>
+          一回だけ記録する（登録なし）
+        </summary>
+        <div style={{ marginTop: "10px" }}>
+          <SupplementAmountFields
+            nameId="supplement-name"
+            productName={productName}
+            setProductName={setProductName}
+            placeholder="マルチビタミン など"
+            rows={rows}
+            setRows={setRows}
+            hasDuplicate={hasDuplicate}
+          />
 
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={!canSave}
-        style={{ ...styles.saveButton, opacity: canSave ? 1 : 0.5 }}
-      >
-        サプリを記録
-      </button>
-      {saveState === "error" && (
-        <p role="status" style={styles.note}>
-          記録できませんでした。もう一度お試しください。
-        </p>
-      )}
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!canSave}
+            style={{ ...styles.saveButton, opacity: canSave ? 1 : 0.5 }}
+          >
+            サプリを記録
+          </button>
+          {saveState === "error" && (
+            <p role="status" style={styles.note}>
+              記録できませんでした。もう一度お試しください。
+            </p>
+          )}
+
+          {registerAsProduct ? (
+            <div style={styles.registerBox}>
+              <p style={styles.formHeading}>この内容を製品として登録</p>
+              <p style={styles.note}>
+                成分の基準量（例: 10錠あたり）を確認して登録すると、次から飲んだ数だけで記録できます。
+              </p>
+              <SupplementProductForm
+                initialName={productName.trim()}
+                initialRows={rows}
+                onSaved={() => {
+                  setProductName("");
+                  setRows(emptyRows());
+                  setRegisterAsProduct(false);
+                  setProductRefresh((n) => n + 1);
+                }}
+                onCancel={() => setRegisterAsProduct(false)}
+              />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setRegisterAsProduct(true)}
+              disabled={!canRegisterProduct}
+              style={{
+                ...styles.registerLink,
+                opacity: canRegisterProduct ? 1 : 0.5,
+              }}
+            >
+              この内容を製品として登録
+            </button>
+          )}
+        </div>
+      </details>
     </div>
   );
 }
@@ -253,5 +311,36 @@ const styles = {
     fontSize: "15px",
     fontWeight: 700,
     cursor: "pointer",
+  },
+  freeForm: {
+    marginTop: "18px",
+    borderTop: "1px solid var(--color-surface)",
+    paddingTop: "12px",
+  },
+  freeFormSummary: {
+    minHeight: "var(--tap-target-min)",
+    display: "flex",
+    alignItems: "center",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: 700,
+    color: "var(--color-primary)",
+  },
+  registerLink: {
+    minHeight: "var(--tap-target-min)",
+    marginTop: "12px",
+    padding: "0 14px",
+    border: "1px dashed var(--color-primary)",
+    borderRadius: "8px",
+    background: "var(--color-base)",
+    color: "var(--color-primary)",
+    fontSize: "13px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  registerBox: {
+    marginTop: "12px",
+    paddingTop: "12px",
+    borderTop: "1px solid var(--color-surface)",
   },
 } satisfies Record<string, React.CSSProperties>;

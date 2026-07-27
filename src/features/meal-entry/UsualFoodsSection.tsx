@@ -2,11 +2,13 @@
 
 import type { UsualFoodsResponse } from "../../server/api/handlers/getUsualFoods";
 import type { DraftItem } from "../food-search/FoodSearchBox";
+import { chipStyles } from "./shortcutChipStyles";
 
 /**
- * いつものX（最近の記録から）shortcut section (UI design v0.3 §1).
- * Derived from recent records — no persisted favorites. Renders nothing
- * when there is no usual list yet, so the parent stays declarative.
+ * いつものX（最近の記録から）shortcut section (UI design v0.3 §1, #62 chips).
+ * Derived from recent records — no persisted favorites. Rendered as a
+ * horizontal chip rail so several shortcuts stay one tap away without
+ * stretching the tab. Renders nothing when there is no usual list yet.
  */
 export function UsualFoodsSection({
   mealTypeLabel,
@@ -22,22 +24,13 @@ export function UsualFoodsSection({
   }
   return (
     <section style={{ marginTop: "24px" }}>
-      <h2 style={styles.sectionTitle}>
+      <h2 style={chipStyles.sectionTitle}>
         いつもの{mealTypeLabel}
-        <span style={styles.sectionHint}>（最近の記録から）</span>
+        <span style={chipStyles.sectionHint}>（最近の記録から）</span>
       </h2>
-      <ul style={styles.shortcutList}>
+      <ul style={chipStyles.rail}>
         {items.map((item) => (
-          <li key={item.food_id} style={styles.shortcutRow}>
-            <span style={{ flex: 1 }}>
-              {item.display_name} {item.intake_g}g
-              {item.estimated_kcal !== null && (
-                <span style={styles.subtext}>
-                  {" "}
-                  {Math.round(item.estimated_kcal)} kcal
-                </span>
-              )}
-            </span>
+          <li key={item.food_id} style={chipStyles.railItem}>
             <button
               type="button"
               onClick={() =>
@@ -48,10 +41,20 @@ export function UsualFoodsSection({
                   estimatedKcal: item.estimated_kcal,
                 })
               }
-              aria-label={`${item.display_name}を追加`}
-              style={styles.shortcutAdd}
+              aria-label={`${item.display_name} ${item.intake_g}gを追加`}
+              style={chipStyles.chip}
             >
-              ＋
+              <span style={chipStyles.chipName}>
+                <span aria-hidden="true" style={chipStyles.chipPlus}>
+                  ＋
+                </span>
+                <span style={chipStyles.chipLabel}>{item.display_name}</span>
+              </span>
+              <span style={chipStyles.chipMeta}>
+                {item.intake_g}g
+                {item.estimated_kcal !== null &&
+                  ` · ${Math.round(item.estimated_kcal)} kcal`}
+              </span>
             </button>
           </li>
         ))}
@@ -59,35 +62,3 @@ export function UsualFoodsSection({
     </section>
   );
 }
-
-const styles = {
-  sectionTitle: { fontSize: "15px", margin: "0 0 8px" },
-  sectionHint: {
-    fontSize: "12px",
-    fontWeight: 400,
-    color: "var(--color-subtext)",
-  },
-  shortcutList: { listStyle: "none", margin: 0, padding: 0 },
-  shortcutRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    minHeight: "var(--tap-target-min)",
-    padding: "4px 0",
-    borderBottom: "1px solid var(--color-surface)",
-    fontSize: "14px",
-  },
-  shortcutAdd: {
-    minHeight: "var(--tap-target-min)",
-    minWidth: "var(--tap-target-min)",
-    padding: "0 12px",
-    border: "1px solid var(--color-primary)",
-    borderRadius: "8px",
-    background: "var(--color-base)",
-    color: "var(--color-primary)",
-    fontSize: "14px",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  subtext: { color: "var(--color-subtext)", fontSize: "13px", margin: 0 },
-} satisfies Record<string, React.CSSProperties>;

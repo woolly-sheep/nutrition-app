@@ -18,15 +18,21 @@ import {
  */
 export function SupplementProductForm({
   product,
+  initialName,
+  initialRows,
   onSaved,
   onCancel,
 }: {
   product?: SupplementProduct;
+  /** Create-mode prefill for the product name (#62 free-form → 製品登録). */
+  initialName?: string;
+  /** Create-mode prefill for the composition rows (#62). */
+  initialRows?: readonly Draft[];
   onSaved: () => void;
   onCancel: () => void;
 }) {
   const isEditing = product !== undefined;
-  const [name, setName] = useState(product?.name ?? "");
+  const [name, setName] = useState(product?.name ?? initialName ?? "");
   const [servingText, setServingText] = useState(
     product ? String(product.serving_count) : "10",
   );
@@ -37,7 +43,9 @@ export function SupplementProductForm({
           nutrientCode: a.nutrient_code,
           amountText: String(a.amount),
         }))
-      : [{ nutrientCode: SUPPLEMENT_NUTRIENTS[0].code, amountText: "" }],
+      : initialRows && initialRows.length > 0
+        ? initialRows.map((r) => ({ ...r }))
+        : [{ nutrientCode: SUPPLEMENT_NUTRIENTS[0].code, amountText: "" }],
   );
   const [error, setError] = useState(false);
 
