@@ -139,7 +139,7 @@ export function DailySummaryScreen() {
       </section>
       <p style={{ textAlign: "center", color: "var(--color-subtext)", fontSize: "12px", margin: "0 0 4px" }}>
         長い花びらほど基準に近い推定 ·{" "}
-        <span style={{ color: "#c79a12" }}>ゴールド＝目標到達</span>
+        <span style={{ color: "#c79a12" }}>✓（ゴールド）＝目標到達</span>
       </p>
 
       {/* #74: same tally + vocabulary as the 分析タブ so both screens
