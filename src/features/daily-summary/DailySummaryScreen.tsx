@@ -242,7 +242,7 @@ export function DailySummaryScreen() {
         </section>
       )}
 
-      <Link href="/meals" style={styles.cta}>
+      <Link href="/meals" className="pressable" style={styles.cta}>
         食事を記録する →
       </Link>
 
@@ -282,10 +282,10 @@ const styles = {
   // elevation so mint and white panels obey one rule.
   headline: {
     display: "flex",
-    gap: "9px",
+    gap: "var(--space-2)",
     alignItems: "flex-start",
-    margin: "14px 0 6px",
-    padding: "12px 14px",
+    margin: "var(--space-4) 0 var(--space-2)",
+    padding: "var(--space-3) var(--space-4)",
     background: "var(--color-surface)",
     borderRadius: "var(--radius-lg)",
     border: "var(--border-hairline)",
@@ -303,25 +303,25 @@ const styles = {
   },
   sectionTitle: {
     fontSize: "15px",
-    margin: "0 0 10px",
+    margin: "0 0 var(--space-3)",
   },
   // #59: shared card-depth treatment for the home sections.
   card: {
-    marginTop: "16px",
-    padding: "16px",
+    marginTop: "var(--space-4)",
+    padding: "var(--space-4)",
     background: "var(--color-base)",
     border: "1px solid var(--color-surface)",
     borderRadius: "var(--radius-lg)",
     boxShadow: "var(--elev-raised)",
-    scrollMarginTop: "16px",
+    scrollMarginTop: "var(--space-4)",
   },
   watchSection: {
-    marginTop: "16px",
-    padding: "16px",
+    marginTop: "var(--space-4)",
+    padding: "var(--space-4)",
     background: "var(--color-surface)",
     borderRadius: "var(--radius-lg)",
     boxShadow: "var(--elev-raised)",
-    scrollMarginTop: "16px",
+    scrollMarginTop: "var(--space-4)",
   },
   watchLink: {
     display: "inline-flex",
@@ -335,7 +335,7 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     minHeight: "var(--tap-target-min)",
-    marginTop: "20px",
+    marginTop: "var(--space-5)",
     color: "var(--color-primary)",
     fontWeight: 700,
     textDecoration: "none",
