@@ -158,18 +158,8 @@ export function DailySummaryScreen() {
         }}
       />
 
-      <FocusNutrients items={summary.focus_nutrients} />
-
-      {garden.length > 0 && (
-        <section style={styles.card}>
-          <h2 style={styles.sectionTitle}>今週の庭</h2>
-          <WeekGarden days={garden} />
-          <p style={{ color: "var(--color-subtext)", fontSize: "11px", margin: "8px 0 0" }}>
-            記録した日はつぼみが開きます。空いた日は明日のつぼみ。
-          </p>
-        </section>
-      )}
-
+      {/* #76: the day's own status (今日の状態) sits directly under the tiles
+          it links to; the reference board and habit garden follow as detail. */}
       <section id="home-done" style={styles.card}>
         <h2 style={styles.sectionTitle}>できていること</h2>
         <p style={{ margin: "0 0 8px", fontSize: "14px" }}>
@@ -237,6 +227,18 @@ export function DailySummaryScreen() {
           <Link href={`/analysis`} style={styles.watchLink}>
             分析タブで詳しく見る →
           </Link>
+        </section>
+      )}
+
+      <FocusNutrients items={summary.focus_nutrients} />
+
+      {garden.length > 0 && (
+        <section style={styles.card}>
+          <h2 style={styles.sectionTitle}>今週の庭</h2>
+          <WeekGarden days={garden} />
+          <p style={{ color: "var(--color-subtext)", fontSize: "11px", margin: "8px 0 0" }}>
+            記録した日はつぼみが開きます。空いた日は明日のつぼみ。
+          </p>
         </section>
       )}
 
