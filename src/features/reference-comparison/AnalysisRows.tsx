@@ -288,7 +288,7 @@ const styles = {
     height: "10px",
     borderRadius: "2px",
     display: "inline-block",
-    backgroundColor: "rgba(47,140,126,0.18)",
+    backgroundColor: "rgba(31,158,131,0.18)",
     backgroundImage:
       "repeating-linear-gradient(135deg, var(--color-primary) 0 2px, transparent 2px 5px)",
   },

@@ -26,7 +26,7 @@ export function HeatmapCell({ percent }: Props) {
   const low = percent < 50;
   // Graded teal, 0.08 → 0.58 alpha across 0–100% (capped: overshoot stays 100).
   const density = Math.min(percent, 100) / 100;
-  const teal = `rgba(47, 140, 126, ${(0.08 + density * 0.5).toFixed(3)})`;
+  const teal = `rgba(31, 158, 131, ${(0.08 + density * 0.5).toFixed(3)})`;
   return (
     <td
       style={{
