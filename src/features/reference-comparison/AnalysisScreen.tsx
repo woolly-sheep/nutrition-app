@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SourceFooter } from "../../components/SourceFooter";
-import type { DailyAnalysisResponse } from "../../server/api/schemas/analysis";
+import type {
+  DailyAnalysisResponse,
+  NutrientTrendPoint,
+  NutrientTrendsResponse,
+} from "../../server/api/schemas/analysis";
 import { ProfilePanel } from "../daily-summary/ProfilePanel";
 import { AGE_BAND_LABELS, SEX_LABELS } from "../daily-summary/ProfileSetup";
 import { BackupPanel } from "../../components/BackupPanel";
@@ -29,6 +33,10 @@ import { buildNutrientBarGroups } from "../../domain/analysis/nutrientStatusGrou
 export function AnalysisScreen() {
   const [data, setData] = useState<DailyAnalysisResponse | null>(null);
   const [failed, setFailed] = useState(false);
+  // #92: one batch fetch of every nutrient's 7-day trend for the row sparklines.
+  const [trends, setTrends] = useState<
+    ReadonlyMap<string, readonly NutrientTrendPoint[]>
+  >(new Map());
 
   useEffect(() => {
     (async () => {
@@ -41,6 +49,25 @@ export function AnalysisScreen() {
         setData((await response.json()) as DailyAnalysisResponse);
       } catch {
         setFailed(true);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const response = await fetch(
+          `/api/analysis/trends?date=${todayIsoDate()}&days=7`,
+        );
+        if (!response.ok) {
+          return; // sparklines are supplementary — the bars still stand alone
+        }
+        const body = (await response.json()) as NutrientTrendsResponse;
+        setTrends(
+          new Map(body.nutrients.map((n) => [n.nutrient_code, n.points])),
+        );
+      } catch {
+        // ignore — rows render without the trend
       }
     })();
   }, []);
@@ -162,6 +189,7 @@ export function AnalysisScreen() {
                 key={item.nutrient_code}
                 item={item}
                 date={data.date}
+                trend={trends.get(item.nutrient_code)}
               />
             ))}
           </div>

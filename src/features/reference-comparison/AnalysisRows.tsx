@@ -4,6 +4,7 @@ import { useState } from "react";
 import { BulletBar } from "../../components/BulletBar";
 import { RangeBar } from "../../components/RangeBar";
 import { formatAmount } from "../../components/RemainingCard";
+import { Sparkline } from "../../components/Sparkline";
 import { SplitBar } from "../../components/SplitBar";
 import { ThresholdBar } from "../../components/ThresholdBar";
 import type {
@@ -11,6 +12,7 @@ import type {
   AnalysisNutrientItem,
   FoodUntrackedItem,
   NonFoodLimitItem,
+  NutrientTrendPoint,
 } from "../../server/api/schemas/analysis";
 import { ContributionPanel } from "./ContributionPanel";
 
@@ -32,15 +34,26 @@ const MEAL_TYPE_LABELS: Record<string, string> = {
 export function NutrientBarRow({
   item,
   date,
+  trend,
 }: {
   item: AnalysisNutrientItem;
   date: string;
+  /** 7-day fulfilment points for the inline sparkline (#92); may be absent. */
+  trend?: readonly NutrientTrendPoint[];
 }) {
   const percent = item.percent_of_reference ?? 0;
   const hasSupplement = item.supplement_amount > 0;
   const foodPercent = item.percent_of_reference_food ?? percent;
   const [expanded, setExpanded] = useState(false);
   const panelId = `contrib-${item.nutrient_code}`;
+  // Show the trend only with ≥2 recorded days (a line needs two points).
+  const recordedTrend = (trend ?? []).filter((p) => p.percent !== null).length;
+  const spark =
+    trend && recordedTrend >= 2 ? (
+      <span style={styles.spark} aria-hidden="true">
+        <Sparkline points={trend} height={22} />
+      </span>
+    ) : null;
   return (
     <div style={{ marginBottom: "14px" }}>
       <button
@@ -69,11 +82,16 @@ export function NutrientBarRow({
       </button>
       {hasSupplement ? (
         <>
-          <SplitBar
-            foodPercent={foodPercent}
-            totalPercent={percent}
-            label={`${item.nutrient_name} 合計${Math.round(percent)}%（食品${Math.round(foodPercent)}%・サプリ${Math.round(percent - foodPercent)}%）`}
-          />
+          <div style={styles.barRow}>
+            <span style={styles.barFlex}>
+              <SplitBar
+                foodPercent={foodPercent}
+                totalPercent={percent}
+                label={`${item.nutrient_name} 合計${Math.round(percent)}%（食品${Math.round(foodPercent)}%・サプリ${Math.round(percent - foodPercent)}%）`}
+              />
+            </span>
+            {spark}
+          </div>
           <p style={styles.splitFigures}>
             食品 {formatAmount(item.food_amount)}
             {item.unit} ・ サプリ {formatAmount(item.supplement_amount)}
@@ -81,11 +99,16 @@ export function NutrientBarRow({
           </p>
         </>
       ) : (
-        <BulletBar
-          percent={percent}
-          label={`${item.nutrient_name} ${Math.round(percent)}%`}
-          showTicks
-        />
+        <div style={styles.barRow}>
+          <span style={styles.barFlex}>
+            <BulletBar
+              percent={percent}
+              label={`${item.nutrient_name} ${Math.round(percent)}%`}
+              showTicks
+            />
+          </span>
+          {spark}
+        </div>
       )}
       {expanded && (
         <div id={panelId}>
@@ -227,6 +250,19 @@ export function NonFoodLimitRow({ item }: { item: NonFoodLimitItem }) {
 }
 
 const styles = {
+  // #92: the bar takes the row, a compact 7-day sparkline sits to its right.
+  barRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  barFlex: { flex: 1, minWidth: 0 },
+  spark: {
+    flex: "none",
+    width: "76px",
+    height: "22px",
+    display: "block",
+  },
   splitFigures: {
     margin: "4px 0 0",
     fontSize: "12px",

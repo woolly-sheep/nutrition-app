@@ -343,6 +343,34 @@ paths:
               schema: { $ref: "#/components/schemas/NutrientTrendResponse" }
         "422": { $ref: "#/components/responses/ValidationProblem" }
 
+  /api/analysis/trends:
+    get:
+      tags: [analysis]
+      summary: 複数栄養素の推移（分析タブのスパークライン用・バッチ）
+      description: |
+        比較可能な全栄養素の充足率（intake ÷ 当日基準 × 100）を直近 days 日分
+        （既定 7・最大 90）古い順に返すバッチ版。ウィンドウを1回だけ走査し、
+        各日の記録を一度読み込んで全栄養素をまとめて判定する（栄養素ごとに
+        個別要求すると重複計算になるため）。記録なしの日は percent=null で
+        0 埋めしない。区分未設定は nutrients 空・profile_required。
+        応答には必ず notice（記録日のみ・推定である旨）を含む。
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: days
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 90, default: 7 }
+      responses:
+        "200":
+          description: 栄養素ごとの充足率の時系列（記録日のみ集計）。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NutrientTrendsResponse" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+
   /api/analysis/garden:
     get:
       tags: [analysis]
@@ -1287,6 +1315,38 @@ components:
         days_below_reference:
           type: integer
           description: 記録日のうち充足率が基準（100%）を下回った日数。
+        notice:
+          type: string
+          description: 必須注記（記録日のみ・推定である旨）。省略禁止。
+        sources:
+          type: array
+          items: { type: string }
+
+    NutrientTrendsResponse:
+      type: object
+      required: [date, window_days, profile_required, nutrients, notice, sources]
+      properties:
+        date: { type: string, format: date }
+        window_days: { type: integer }
+        profile_required: { type: boolean }
+        nutrients:
+          type: array
+          description: 比較可能な栄養素ごとの時系列。区分未設定時は空。
+          items:
+            type: object
+            required: [nutrient_code, points]
+            properties:
+              nutrient_code: { type: string }
+              points:
+                type: array
+                description: 古い順。記録なしの日は percent=null（0 埋めしない）。
+                items:
+                  type: object
+                  required: [date, percent, has_record]
+                  properties:
+                    date: { type: string, format: date }
+                    percent: { type: [number, "null"] }
+                    has_record: { type: boolean }
         notice:
           type: string
           description: 必須注記（記録日のみ・推定である旨）。省略禁止。
