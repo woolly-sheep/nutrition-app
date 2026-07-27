@@ -1,4 +1,8 @@
 import { BulletBar } from "./BulletBar";
+// #77: formatAmount now lives in the domain; re-exported here so existing
+// imports (from "./RemainingCard") keep working.
+export { formatAmount } from "../domain/format/amount";
+import { formatAmount } from "../domain/format/amount";
 
 /**
  * Shortfall card (5b): single primary figure 「あと◯◯」 in the numeric
@@ -61,9 +65,4 @@ export function RemainingCard({
       />
     </div>
   );
-}
-
-export function formatAmount(value: number): string {
-  const rounded = Math.round(value * 10) / 10;
-  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
