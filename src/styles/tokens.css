@@ -14,6 +14,19 @@
   --color-text: #202a2c;
   --color-subtext: #6a7776;
 
+  /*
+   * Derived semantics (#86 / #88). The soft-accent trio is a quieter dress
+   * for the SAME achievement meaning (still accent-only) — a pale gold ground
+   * with gold ink/line instead of a loud solid fill. The emphasis pair is the
+   * calm "attention" treatment that replaces the near-black border on the
+   * 不足 / 上限注意 tiles (primary-tinted, never red, never solid gold).
+   */
+  --color-accent-soft: rgba(244, 194, 58, 0.16); /* achievement chip ground */
+  --color-accent-line: rgba(199, 154, 18, 0.45); /* achievement chip border */
+  --color-accent-ink: #a9790c; /* achievement chip text/✓ */
+  --color-emphasis-line: rgba(47, 140, 126, 0.55); /* attention tile border */
+  --color-emphasis-fill: rgba(47, 140, 126, 0.06); /* attention tile ground */
+
   /* 2.2 Typography */
   --font-ui: "Noto Sans JP", sans-serif;
   --font-numeric: "Shippori Mincho B1", serif; /* key figures (あと◯◯) */

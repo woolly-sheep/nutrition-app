@@ -277,6 +277,9 @@ function formatJapaneseDate(isoDate: string): string {
 }
 
 const styles = {
+  // #89: unify the depth language. The mint callout was flat while the white
+  // cards below carried a shadow; give this surface the same hairline + rest
+  // elevation so mint and white panels obey one rule.
   headline: {
     display: "flex",
     gap: "9px",
@@ -285,6 +288,8 @@ const styles = {
     padding: "12px 14px",
     background: "var(--color-surface)",
     borderRadius: "var(--radius-lg)",
+    border: "var(--border-hairline)",
+    boxShadow: "var(--elev-rest)",
     fontSize: "13.5px",
     lineHeight: 1.5,
   },

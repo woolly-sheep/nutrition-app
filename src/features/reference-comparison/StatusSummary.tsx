@@ -109,7 +109,15 @@ const styles = {
     borderRadius: "var(--radius-md)",
     background: "var(--color-base)",
   },
-  tileEmphasis: { border: "1px solid var(--color-text)" },
+  // #88: the 不足 / 上限注意 tiles used a near-black (--color-text) border that
+  // jarred against the calm palette. Soften to a primary-tinted border + a hint
+  // of fill so "attention" is felt, not shouted. No red; no gold (accent stays
+  // achievement-only). 不足 and 上限注意 keep the same calm treatment — their
+  // distinct labels already tell them apart without leaning on colour.
+  tileEmphasis: {
+    border: "1px solid var(--color-emphasis-line)",
+    background: "var(--color-emphasis-fill)",
+  },
   tileQuiet: { border: "1px solid var(--color-surface)" },
   tileLink: {
     textDecoration: "none",

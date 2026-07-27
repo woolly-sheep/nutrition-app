@@ -63,6 +63,18 @@ export function BloomFlower({ petals, overall }: Props) {
           <rect width="5" height="5" fill="var(--color-primary)" opacity="0.18" />
           <line x1="0" y1="0" x2="0" y2="5" stroke="var(--color-primary)" strokeWidth="2" />
         </pattern>
+        {/* #87: seat the centre figure on a subtle "jewel" instead of a flat
+            mint disk. Near-hue gradient + a single soft inner shadow (opacity
+            ≤ 0.28) + one highlight ring — the depth serves legibility, it is not
+            skeuomorphic gloss. Petals / figure / colour semantics are unchanged. */}
+        <radialGradient id="bloom-jewel" cx="42%" cy="38%" r="70%">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="55%" stopColor="#eafaf8" />
+          <stop offset="100%" stopColor="#cdeee9" />
+        </radialGradient>
+        <filter id="bloom-jewel-inner" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="1.4" stdDeviation="1.6" floodColor="var(--color-primary-deep)" floodOpacity="0.28" />
+        </filter>
       </defs>
       <circle cx={CENTER} cy={CENTER_Y} r={104} fill="url(#bloom-glow)" />
       <g>
@@ -156,7 +168,9 @@ export function BloomFlower({ petals, overall }: Props) {
         );
       })}
 
-      <circle cx={CENTER} cy={CENTER_Y} r={25} fill="var(--color-surface)" />
+      <circle cx={CENTER} cy={CENTER_Y} r={26} fill="url(#bloom-jewel)" filter="url(#bloom-jewel-inner)" />
+      <circle cx={CENTER} cy={CENTER_Y} r={25.5} fill="none" stroke="var(--color-base)" strokeOpacity={0.7} strokeWidth={1} />
+      <circle cx={CENTER} cy={CENTER_Y} r={23} fill="none" stroke="var(--color-primary)" strokeOpacity={0.22} strokeWidth={1} />
       <text
         x={CENTER}
         y={CENTER_Y - 3}
