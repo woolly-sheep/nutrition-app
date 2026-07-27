@@ -237,7 +237,7 @@ const styles = {
     minHeight: "var(--tap-target-min)",
     padding: "0 12px",
     border: "1px solid var(--color-subtext)",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-sm)",
     fontSize: "16px",
     background: "var(--color-base)",
     color: "var(--color-text)",
@@ -247,7 +247,7 @@ const styles = {
     margin: "8px 0 0",
     padding: 0,
     border: "1px solid var(--color-surface)",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-sm)",
     overflow: "hidden",
   },
   resultRow: {
@@ -269,7 +269,7 @@ const styles = {
   gramsPanel: {
     marginTop: "8px",
     padding: "12px",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-sm)",
     background: "var(--color-surface)",
   },
   inputBlock: {
@@ -292,14 +292,14 @@ const styles = {
     minHeight: "var(--tap-target-min)",
     padding: "0 12px",
     border: "1px solid var(--color-subtext)",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-sm)",
     fontSize: "16px",
   },
   addButton: {
     minHeight: "var(--tap-target-min)",
     padding: "0 16px",
     border: "none",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-sm)",
     background: "var(--color-primary)",
     color: "var(--color-base)",
     fontSize: "15px",

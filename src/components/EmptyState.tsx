@@ -31,7 +31,7 @@ export function EmptyState({ dateLabel }: Props) {
           alignItems: "center",
           minHeight: "var(--tap-target-min)",
           padding: "0 20px",
-          borderRadius: "8px",
+          borderRadius: "var(--radius-sm)",
           background: "var(--color-primary)",
           color: "var(--color-base)",
           textDecoration: "none",
@@ -45,7 +45,7 @@ export function EmptyState({ dateLabel }: Props) {
         style={{
           marginTop: "24px",
           padding: "12px 16px",
-          borderRadius: "10px",
+          borderRadius: "var(--radius-md)",
           background: "var(--color-surface)",
         }}
       >

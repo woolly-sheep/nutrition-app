@@ -285,13 +285,13 @@ const styles = {
     marginTop: "20px",
     padding: "12px",
     border: "1px solid var(--color-text)",
-    borderRadius: "10px",
+    borderRadius: "var(--radius-md)",
   },
   nonFoodSection: {
     marginTop: "20px",
     padding: "12px",
     border: "1px solid var(--color-text)",
-    borderRadius: "10px",
+    borderRadius: "var(--radius-md)",
   },
   tapHint: {
     fontSize: "12px",
@@ -301,7 +301,7 @@ const styles = {
   noteCallout: {
     marginTop: "8px",
     padding: "10px 12px",
-    borderRadius: "10px",
+    borderRadius: "var(--radius-md)",
     background: "var(--color-surface)",
     fontSize: "12px",
     lineHeight: 1.7,

@@ -284,7 +284,7 @@ const styles = {
     margin: "14px 0 6px",
     padding: "12px 14px",
     background: "var(--color-surface)",
-    borderRadius: "14px",
+    borderRadius: "var(--radius-lg)",
     fontSize: "13.5px",
     lineHeight: 1.5,
   },
@@ -306,18 +306,16 @@ const styles = {
     padding: "16px",
     background: "var(--color-base)",
     border: "1px solid var(--color-surface)",
-    borderRadius: "16px",
-    boxShadow:
-      "0 1px 2px rgba(32, 42, 44, 0.04), 0 8px 24px rgba(32, 42, 44, 0.05)",
+    borderRadius: "var(--radius-lg)",
+    boxShadow: "var(--elev-raised)",
     scrollMarginTop: "16px",
   },
   watchSection: {
     marginTop: "16px",
     padding: "16px",
     background: "var(--color-surface)",
-    borderRadius: "16px",
-    boxShadow:
-      "0 1px 2px rgba(32, 42, 44, 0.04), 0 8px 24px rgba(32, 42, 44, 0.05)",
+    borderRadius: "var(--radius-lg)",
+    boxShadow: "var(--elev-raised)",
     scrollMarginTop: "16px",
   },
   watchLink: {

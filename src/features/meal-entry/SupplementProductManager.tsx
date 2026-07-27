@@ -156,7 +156,7 @@ export function SupplementProductManager({
 const styles = {
   wrap: {
     border: "1px solid var(--color-surface)",
-    borderRadius: "10px",
+    borderRadius: "var(--radius-md)",
     padding: "12px",
     marginBottom: "16px",
   },
@@ -176,7 +176,7 @@ const styles = {
     marginTop: "10px",
     padding: "0 14px",
     border: "1px dashed var(--color-primary)",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-sm)",
     background: "var(--color-base)",
     color: "var(--color-primary)",
     fontSize: "13px",

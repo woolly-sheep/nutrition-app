@@ -239,7 +239,7 @@ const styles = {
     minHeight: "var(--tap-target-min)",
     minWidth: "var(--tap-target-min)",
     border: "1px solid var(--color-surface)",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-sm)",
     background: "var(--color-base)",
     color: "var(--color-primary)",
     fontSize: "16px",
@@ -253,7 +253,7 @@ const styles = {
   infoCallout: {
     marginTop: "12px",
     padding: "10px 12px",
-    borderRadius: "10px",
+    borderRadius: "var(--radius-md)",
     background: "var(--color-surface)",
     fontSize: "12px",
     lineHeight: 1.7,

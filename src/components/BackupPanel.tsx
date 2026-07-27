@@ -114,7 +114,7 @@ const styles = {
     minHeight: "var(--tap-target-min)",
     padding: "0 16px",
     border: "1px solid var(--color-primary)",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-sm)",
     background: "var(--color-base)",
     color: "var(--color-primary)",
     fontSize: "14px",

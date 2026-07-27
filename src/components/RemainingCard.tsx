@@ -31,7 +31,7 @@ export function RemainingCard({
     <div
       style={{
         padding: "12px",
-        borderRadius: "10px",
+        borderRadius: "var(--radius-md)",
         border: "1px solid var(--color-surface)",
         marginBottom: "8px",
       }}

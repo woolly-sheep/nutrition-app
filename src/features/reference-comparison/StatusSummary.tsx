@@ -106,7 +106,7 @@ const styles = {
     gap: "2px",
     minHeight: "var(--tap-target-min)",
     padding: "10px 4px",
-    borderRadius: "12px",
+    borderRadius: "var(--radius-md)",
     background: "var(--color-base)",
   },
   tileEmphasis: { border: "1px solid var(--color-text)" },

@@ -15,7 +15,7 @@ export function AchievementBadge({ text }: Props) {
         alignItems: "center",
         gap: "4px",
         padding: "4px 10px",
-        borderRadius: "999px",
+        borderRadius: "var(--radius-pill)",
         background: "var(--color-accent)",
         color: "var(--color-text)",
         fontSize: "13px",
