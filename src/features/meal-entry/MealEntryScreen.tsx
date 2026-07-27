@@ -192,6 +192,7 @@ export function MealEntryScreen() {
         <div style={styles.dateNav}>
           <button
             type="button"
+            className="pressable"
             onClick={() => shiftDate(-1)}
             aria-label="前の日へ"
             style={styles.dateNavButton}
@@ -204,6 +205,7 @@ export function MealEntryScreen() {
           </p>
           <button
             type="button"
+            className="pressable"
             onClick={() => shiftDate(1)}
             disabled={date === today}
             aria-label="次の日へ"
@@ -219,6 +221,7 @@ export function MealEntryScreen() {
           <button
             type="button"
             role="tab"
+            className="pressable"
             aria-selected={zone === "add"}
             onClick={() => setZone("add")}
             style={{
@@ -233,6 +236,7 @@ export function MealEntryScreen() {
           <button
             type="button"
             role="tab"
+            className="pressable"
             aria-selected={zone === "log"}
             onClick={() => setZone("log")}
             style={{
@@ -255,6 +259,7 @@ export function MealEntryScreen() {
               <button
                 key={type}
                 type="button"
+                className="pressable"
                 onClick={() => setMealType(type)}
                 aria-pressed={mealType === type}
                 style={{
@@ -276,9 +281,9 @@ export function MealEntryScreen() {
 
           <FoodSearchBox onAdd={handleAdd} />
 
-      <details style={{ marginTop: "12px" }}>
+      <details style={{ marginTop: "var(--space-4)" }}>
         <summary style={styles.finderSummary}>栄養素から探す</summary>
-        <div style={{ marginTop: "8px" }}>
+        <div style={{ marginTop: "var(--space-2)" }}>
           <NutrientFinder onAdd={handleAdd} />
         </div>
       </details>
@@ -328,6 +333,7 @@ export function MealEntryScreen() {
           <div style={styles.saveBarWrap}>
             <button
               type="button"
+              className="pressable"
               onClick={handleSave}
               disabled={draftItems.length === 0 || saveState === "saving"}
               style={{
@@ -387,9 +393,9 @@ function isoDatePlusDays(date: string, days: number): string {
 }
 
 const styles = {
-  header: { marginBottom: "16px" },
+  header: { marginBottom: "var(--space-4)" },
   date: { margin: 0, color: "var(--color-subtext)", fontSize: "13px" },
-  dateNav: { display: "flex", alignItems: "center", gap: "8px" },
+  dateNav: { display: "flex", alignItems: "center", gap: "var(--space-2)" },
   dateNavButton: {
     minHeight: "var(--tap-target-min)",
     minWidth: "var(--tap-target-min)",
@@ -400,8 +406,10 @@ const styles = {
     fontSize: "16px",
     cursor: "pointer",
   },
-  title: { margin: "4px 0 12px", fontSize: "20px" },
-  zoneRow: { display: "flex", gap: "8px", marginTop: "12px" },
+  // #90: give the heading room to breathe under the zone toggle, and an even
+  // gap below before the meal-type row (was 4/12 → 24/16 on the 8px scale).
+  title: { margin: "var(--space-5) 0 var(--space-4)", fontSize: "20px" },
+  zoneRow: { display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)" },
   zoneButton: {
     minHeight: "var(--tap-target-min)",
     flex: 1,
@@ -423,9 +431,10 @@ const styles = {
   emptyLog: {
     color: "var(--color-subtext)",
     fontSize: "14px",
-    margin: "24px 0",
+    margin: "var(--space-5) 0",
   },
-  mealTypeRow: { display: "flex", gap: "8px" },
+  // #90: separate the meal-type row from the search box below it.
+  mealTypeRow: { display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-4)" },
   mealTypeButton: {
     minHeight: "var(--tap-target-min)",
     flex: 1,
@@ -446,11 +455,11 @@ const styles = {
   saveBarWrap: {
     position: "sticky" as const,
     // Clear the fixed bottom TabBar so the primary action is always reachable.
-    bottom: "calc(var(--tap-target-min) + 12px)",
+    bottom: "calc(var(--tap-target-min) + var(--space-3))",
     zIndex: 5,
-    marginTop: "20px",
-    paddingTop: "10px",
-    paddingBottom: "2px",
+    marginTop: "var(--space-5)",
+    paddingTop: "var(--space-3)",
+    paddingBottom: "var(--space-1)",
     background: "var(--color-base)",
     boxShadow: "0 -10px 16px -10px rgba(32, 42, 44, 0.14)",
   },
@@ -466,14 +475,14 @@ const styles = {
     cursor: "pointer",
   },
   savedNote: {
-    marginTop: "12px",
-    padding: "12px",
+    marginTop: "var(--space-3)",
+    padding: "var(--space-3)",
     borderRadius: "var(--radius-sm)",
     background: "var(--color-surface)",
     fontSize: "14px",
   },
   subtext: { color: "var(--color-subtext)", fontSize: "13px", margin: 0 },
-  footer: { marginTop: "24px" },
+  footer: { marginTop: "var(--space-5)" },
   supplementSummary: {
     minHeight: "var(--tap-target-min)",
     display: "flex",

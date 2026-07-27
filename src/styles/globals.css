@@ -26,6 +26,28 @@ button {
 }
 
 /*
+ * #90: tap feedback for pressable tiles / chips / CTAs. A light press-in gives
+ * touch a physical quality without motion for its own sake. Motion-gated — a
+ * reduced-motion viewer gets no transform. Apply via className="pressable".
+ */
+.pressable {
+  transition:
+    transform var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+.pressable:active {
+  transform: scale(0.98);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pressable {
+    transition: none;
+  }
+  .pressable:active {
+    transform: none;
+  }
+}
+
+/*
  * #60 richness: fills grow in on mount. Uses scaleX so it works with the
  * dynamic inline width each bar already sets. Motion-gated — a reduced-motion
  * viewer sees the final state with no animation.

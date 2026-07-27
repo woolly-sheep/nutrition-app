@@ -74,6 +74,7 @@ export function StatusSummary({
             <a
               key={tile.key}
               href={tile.href}
+              className="pressable"
               style={{ ...tileStyle, ...styles.tileLink }}
               aria-label={`${tile.label} ${tile.value}件へ移動`}
             >
