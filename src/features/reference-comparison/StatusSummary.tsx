@@ -3,26 +3,36 @@
 import { buildStatusTally } from "../../domain/analysis/nutrientStatusGroups";
 
 /**
- * 分析タブ・日次 の状態サマリー (issue #57). Four counts before the detail so
- * the day reads at a glance: 不足 / 目安圏内 / 達成 / 上限注意. Each tile jumps
- * to its section. 不足 and 上限注意 carry a stronger border to signal where
- * attention goes — no red, no gold (accent stays achievement-only). Facts
- * only; the counts come straight from the analysis, no judgement here.
+ * 状態サマリー (issue #57). Four counts before the detail so the day reads at
+ * a glance: 不足 / 目安圏内 / 達成 / 上限注意. Shared by the 分析タブ and the
+ * home 今日の栄養 so both screens speak one vocabulary with reconciling counts
+ * (#74) — the tally is the single source of truth. Each tile jumps to its
+ * section (per-screen anchors via `hrefs`). 不足 and 上限注意 carry a stronger
+ * border to signal where attention goes — no red, no gold (accent stays
+ * achievement-only). Facts only; the counts come straight from the analysis.
  */
+export type StatusHrefs = {
+  short?: string;
+  near?: string;
+  achieved?: string;
+  attention?: string;
+};
+
 export function StatusSummary({
   comparableCount,
   atLeast80Count,
   achievedCount,
   ulReachedCount,
   dgOverCount,
-  attentionHref,
+  hrefs,
 }: {
   comparableCount: number;
   atLeast80Count: number;
   achievedCount: number;
   ulReachedCount: number;
   dgOverCount: number;
-  attentionHref?: string;
+  /** Per-screen anchor targets for each tile; a tile links only when set. */
+  hrefs?: StatusHrefs;
 }) {
   const tally = buildStatusTally({
     comparableCount,
@@ -39,10 +49,10 @@ export function StatusSummary({
     href?: string;
     emphasis: boolean;
   }[] = [
-    { key: "short", label: "不足", value: tally.short, href: "#grp-short", emphasis: true },
-    { key: "near", label: "目安圏内", value: tally.near, href: "#grp-near", emphasis: false },
-    { key: "achieved", label: "達成", value: tally.achieved, href: "#grp-achieved", emphasis: false },
-    { key: "attention", label: "上限注意", value: tally.attention, href: attentionHref, emphasis: true },
+    { key: "short", label: "不足", value: tally.short, href: hrefs?.short, emphasis: true },
+    { key: "near", label: "目安圏内", value: tally.near, href: hrefs?.near, emphasis: false },
+    { key: "achieved", label: "達成", value: tally.achieved, href: hrefs?.achieved, emphasis: false },
+    { key: "attention", label: "上限注意", value: tally.attention, href: hrefs?.attention, emphasis: true },
   ];
 
   return (

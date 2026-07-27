@@ -16,6 +16,7 @@ import type {
   WeeklyAnalysisResponse,
 } from "../../server/api/schemas/analysis";
 import type { FoodCandidatesResponse } from "../../server/api/handlers/getFoodCandidates";
+import { StatusSummary } from "../reference-comparison/StatusSummary";
 import { AGE_BAND_LABELS, ProfileSetup, SEX_LABELS } from "./ProfileSetup";
 import { ShortfallRow } from "./ShortfallRow";
 import { OverCauseRow } from "./OverCauseRow";
@@ -111,18 +112,6 @@ export function DailySummaryScreen() {
     ulReachedNames: summary.ul_reached.map((item) => item.nutrient_name),
     dgOverNames: summary.dg_over.map((item) => item.nutrient_name),
   });
-  // #59: glanceable quick-summary that also jumps to each section.
-  const homeStats: {
-    label: string;
-    value: number;
-    href: string;
-    emphasis: boolean;
-  }[] = [
-    { label: "達成", value: summary.achieved.length, href: "#home-done", emphasis: false },
-    { label: "あと少し", value: summary.insufficient.length, href: "#home-short", emphasis: false },
-    { label: "気をつけたい", value: watchItems.length, href: "#home-watch", emphasis: true },
-  ];
-
   return (
     <div>
       <header>
@@ -153,36 +142,21 @@ export function DailySummaryScreen() {
         <span style={{ color: "#c79a12" }}>ゴールド＝目標到達</span>
       </p>
 
-      <nav aria-label="今日の要約" style={styles.statStrip}>
-        {homeStats.map((stat) => {
-          const on = stat.value > 0;
-          const tileStyle = {
-            ...styles.statTile,
-            ...(stat.emphasis && on
-              ? styles.statTileEmphasis
-              : styles.statTileQuiet),
-          };
-          const inner = (
-            <>
-              <span style={styles.statValue}>{stat.value}</span>
-              <span style={styles.statLabel}>{stat.label}</span>
-            </>
-          );
-          return on ? (
-            <a
-              key={stat.label}
-              href={stat.href}
-              style={{ ...tileStyle, ...styles.statTileLink }}
-            >
-              {inner}
-            </a>
-          ) : (
-            <div key={stat.label} style={tileStyle}>
-              {inner}
-            </div>
-          );
-        })}
-      </nav>
+      {/* #74: same tally + vocabulary as the 分析タブ so both screens
+          reconcile — home is a simplified view, not a second taxonomy. */}
+      <StatusSummary
+        comparableCount={summary.comparable_count}
+        atLeast80Count={summary.at_least_80_count}
+        achievedCount={summary.achieved.length}
+        ulReachedCount={summary.ul_reached.length}
+        dgOverCount={summary.dg_over.length}
+        hrefs={{
+          short: "#home-short",
+          near: "#home-short",
+          achieved: "#home-done",
+          attention: "#home-watch",
+        }}
+      />
 
       <FocusNutrients items={summary.focus_nutrients} />
 
@@ -320,33 +294,6 @@ const styles = {
     fontSize: "15px",
     margin: "0 0 10px",
   },
-  statStrip: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "8px",
-    margin: "12px 0 4px",
-  },
-  statTile: {
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "2px",
-    minHeight: "var(--tap-target-min)",
-    padding: "10px 4px",
-    borderRadius: "12px",
-    background: "var(--color-base)",
-  },
-  statTileEmphasis: { border: "1px solid var(--color-text)" },
-  statTileQuiet: { border: "1px solid var(--color-surface)" },
-  statTileLink: { textDecoration: "none", color: "inherit", cursor: "pointer" },
-  statValue: {
-    fontFamily: "var(--font-numeric)",
-    fontSize: "22px",
-    lineHeight: 1.1,
-    color: "var(--color-primary-deep)",
-  },
-  statLabel: { fontSize: "11px", color: "var(--color-subtext)" },
   // #59: shared card-depth treatment for the home sections.
   card: {
     marginTop: "16px",
