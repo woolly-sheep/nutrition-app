@@ -84,6 +84,7 @@ export function NutrientBarRow({
         <BulletBar
           percent={percent}
           label={`${item.nutrient_name} ${Math.round(percent)}%`}
+          showTicks
         />
       )}
       {expanded && (

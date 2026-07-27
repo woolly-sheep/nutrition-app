@@ -138,6 +138,13 @@ export function WeeklyReport({ date }: Props) {
           <tbody>
             {data.nutrients.map((nutrient) => {
               const isOpen = expandedCode === nutrient.nutrient_code;
+              // #94: how many days actually fed this average. A one-day average
+              // must not look as trustworthy as a full week — surface n so it
+              // isn't over-read (same "don't exaggerate" stance as #73/#91).
+              const recordedDays = nutrient.daily.filter(
+                (cell) => cell.percent !== null,
+              ).length;
+              const lowSample = recordedDays <= 1;
               return (
                 <Fragment key={nutrient.nutrient_code}>
                   <tr>
@@ -159,8 +166,23 @@ export function WeeklyReport({ date }: Props) {
                     {nutrient.daily.map((cell) => (
                       <HeatmapCell key={cell.date} percent={cell.percent} />
                     ))}
-                    <td style={styles.averageCell}>
-                      {Math.round(nutrient.average_percent)}
+                    <td
+                      style={styles.averageCell}
+                      aria-label={`週平均 ${Math.round(nutrient.average_percent)}パーセント、記録 ${recordedDays} 日で算出`}
+                    >
+                      <span style={{ opacity: lowSample ? 0.5 : 1 }}>
+                        {Math.round(nutrient.average_percent)}
+                      </span>
+                      <span style={styles.sampleDots} aria-hidden="true">
+                        {DAY_LABELS.slice(0, dayCount).map((_, i) => (
+                          <i
+                            key={i}
+                            style={
+                              i < recordedDays ? styles.sampleDotOn : styles.sampleDotOff
+                            }
+                          />
+                        ))}
+                      </span>
                     </td>
                   </tr>
                   {isOpen && (
@@ -180,7 +202,9 @@ export function WeeklyReport({ date }: Props) {
           </tbody>
         </table>
       </div>
-      <p style={styles.subtext}>数値=充足率% · ✓=達成 · 斜線=50%未満 · –=記録なし</p>
+      <p style={styles.subtext}>
+        数値=充足率% · ✓=達成 · 斜線=50%未満 · –=記録なし · 平均下の点=記録日数
+      </p>
 
       {(data.patterns.length > 0 || achievedPatterns.length > 0) && (
         <div style={{ marginTop: "16px" }}>
@@ -305,6 +329,24 @@ const styles = {
     fontSize: "11px",
     fontWeight: 700,
     padding: "6px 2px",
+  },
+  sampleDots: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "2px",
+    marginTop: "3px",
+  },
+  sampleDotOn: {
+    width: "3px",
+    height: "3px",
+    borderRadius: "50%",
+    background: "var(--color-primary)",
+  },
+  sampleDotOff: {
+    width: "3px",
+    height: "3px",
+    borderRadius: "50%",
+    background: "rgba(32, 42, 44, 0.14)",
   },
   patternList: {
     listStyle: "none",
