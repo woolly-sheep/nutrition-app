@@ -526,6 +526,36 @@ paths:
         "422": { $ref: "#/components/responses/ValidationProblem" }
 
   /api/supplement-products/{product_id}:
+    put:
+      tags: [supplements]
+      summary: 製品プリセットの編集（名前・基準量・成分を差し替え）
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/CreateSupplementProductRequest" }
+      responses:
+        "200":
+          description: 更新後の製品。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [product]
+                properties:
+                  product: { $ref: "#/components/schemas/SupplementProduct" }
+        "404":
+          description: 指定 product_id が存在しない。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
     delete:
       tags: [supplements]
       summary: 製品プリセットの削除

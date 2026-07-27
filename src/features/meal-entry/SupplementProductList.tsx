@@ -15,12 +15,14 @@ export function SupplementProductList({
   doseText,
   onDoseChange,
   onLog,
+  onEdit,
   onDelete,
 }: {
   products: readonly SupplementProduct[];
   doseText: Record<string, string>;
   onDoseChange: (productId: string, value: string) => void;
   onLog: (product: SupplementProduct) => void;
+  onEdit: (product: SupplementProduct) => void;
   onDelete: (productId: string) => void;
 }) {
   if (products.length === 0) {
@@ -63,6 +65,14 @@ export function SupplementProductList({
                 style={styles.logButton}
               >
                 記録
+              </button>
+              <button
+                type="button"
+                onClick={() => onEdit(product)}
+                style={styles.editProduct}
+                aria-label={`${product.name}を編集`}
+              >
+                編集
               </button>
               <button
                 type="button"
@@ -119,6 +129,15 @@ const styles = {
     color: "var(--color-base)",
     fontSize: "14px",
     fontWeight: 700,
+    cursor: "pointer",
+  },
+  editProduct: {
+    minHeight: "var(--tap-target-min)",
+    padding: "0 10px",
+    border: "none",
+    background: "transparent",
+    color: "var(--color-primary)",
+    fontSize: "13px",
     cursor: "pointer",
   },
   deleteProduct: {
