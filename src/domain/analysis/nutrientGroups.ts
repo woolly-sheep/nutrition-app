@@ -58,14 +58,18 @@ export const NUTRIENT_GROUPS: {
 export type PetalValue = {
   key: NutrientGroupKey;
   label: string;
-  /** Mean fulfilment 0..1+ (uncapped); null when no member is comparable. */
+  /**
+   * Mean fulfilment 0..1, each member capped at 100% before averaging (#73);
+   * null when no member is comparable.
+   */
   fulfillment: number | null;
   /**
-   * Food-only mean fulfilment 0..1+ — the solid part of the petal. Equals
-   * fulfillment when no member has a supplement share. null when unknown.
+   * Food-only mean fulfilment 0..1 (members capped at 100%) — the solid part
+   * of the petal. Equals fulfillment when no member has a supplement share.
+   * null when unknown.
    */
   foodFulfillment: number | null;
-  /** True when the group's mean reaches the reference (gold petal). */
+  /** True when every member reached its reference (gold petal). */
   achieved: boolean;
   /** True when a member exceeded its tolerable upper limit (never gold). */
   overLimit: boolean;
@@ -73,7 +77,10 @@ export type PetalValue = {
 
 export type BloomModel = {
   petals: readonly PetalValue[];
-  /** Overall mean fulfilment across all comparable nutrients (0..1+). */
+  /**
+   * Overall mean fulfilment across all comparable nutrients (0..1), each
+   * capped at 100% first so over-supply cannot push it past 100% (#73).
+   */
   overall: number | null;
 };
 
@@ -116,30 +123,40 @@ export function buildBloomModel(
         overLimit,
       };
     }
-    const mean = values.reduce((sum, v) => sum + v, 0) / values.length / 100;
+    // #73: cap each member at 100% before averaging so an over-supplied
+    // nutrient can no longer inflate the petal and hide a deficient member.
+    const mean = meanCapped(values);
     // Food-only mean over the SAME members, so the solid part is never
     // larger than the total petal.
     const foodValues = group.codes
       .filter((code) => percentByCode.has(code))
       .map((code) => foodPercentByCode.get(code) ?? 0);
-    const foodMean =
-      foodValues.reduce((sum, v) => sum + v, 0) / foodValues.length / 100;
+    const foodMean = meanCapped(foodValues);
     return {
       key: group.key,
       label: group.label,
       fulfillment: mean,
       foodFulfillment: foodMean,
-      // Over the upper limit is never celebrated as achieved (gold).
+      // Gold only when every member reached its reference (capped mean = 1)
+      // and none is over its upper limit.
       achieved: mean >= 1 && !overLimit,
       overLimit,
     };
   });
 
   const all = [...percentByCode.values()];
-  const overall =
-    all.length === 0
-      ? null
-      : all.reduce((sum, v) => sum + v, 0) / all.length / 100;
+  const overall = all.length === 0 ? null : meanCapped(all);
 
   return { petals, overall };
+}
+
+/**
+ * Mean of the percents with each member capped at 100% first, expressed as a
+ * 0..1 ratio (#73). Capping keeps over-supply from masking shortfalls in the
+ * aggregate — the flower shows how close the day is to *meeting* references,
+ * not how far it overshoots. Over-limit is surfaced separately.
+ */
+function meanCapped(percents: readonly number[]): number {
+  const sum = percents.reduce((acc, v) => acc + Math.min(v, 100), 0);
+  return sum / percents.length / 100;
 }

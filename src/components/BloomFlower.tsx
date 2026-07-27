@@ -25,7 +25,7 @@ const MAX_EXTRA = 28;
 
 type Props = {
   petals: readonly PetalValue[];
-  /** Overall mean fulfilment 0..1+, shown in the flower centre. */
+  /** Overall mean fulfilment 0..1 (members capped at 100%), shown centre. */
   overall: number | null;
 };
 
