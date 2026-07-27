@@ -24,6 +24,7 @@
   --color-sky: #5db4cc;
   --color-sky-soft: rgba(93, 180, 204, 0.16);
   --color-sky-ink: #2a7f97;
+  --color-sky-line: rgba(93, 180, 204, 0.5);
 
   /*
    * Derived semantics (#86 / #88). The soft-accent trio is a quieter dress

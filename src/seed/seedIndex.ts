@@ -1,4 +1,4 @@
-import type { Seed, UnitConversionRecord } from "./types";
+import type { NutrientAmountRecord, Seed, UnitConversionRecord } from "./types";
 
 /**
  * Memoized energy lookup over the seed. At 40,608 nutrient rows, the
@@ -31,6 +31,38 @@ export function getEnergyByFoodId(seed: Seed): Map<string, number | null> {
   }
   energyCache.set(key, energyByFoodId);
   return energyByFoodId;
+}
+
+const nutrientsByFoodCache = new WeakMap<
+  object,
+  Map<string, NutrientAmountRecord[]>
+>();
+
+/**
+ * Memoized per-food nutrient index: food_id → all its nutrient rows. Lets the
+ * food nutrient view (食材の栄養価) read one food's full profile in O(1) rather
+ * than scanning the 58k rehydrated rows on every request. Cached by the
+ * nutrientAmount array reference, like getEnergyByFoodId.
+ */
+export function getNutrientsByFoodId(
+  seed: Seed,
+): Map<string, NutrientAmountRecord[]> {
+  const key = seed.nutrientAmount as unknown as object;
+  const cached = nutrientsByFoodCache.get(key);
+  if (cached) {
+    return cached;
+  }
+  const byFoodId = new Map<string, NutrientAmountRecord[]>();
+  for (const record of seed.nutrientAmount) {
+    const group = byFoodId.get(record.food_id);
+    if (group) {
+      group.push(record);
+    } else {
+      byFoodId.set(record.food_id, [record]);
+    }
+  }
+  nutrientsByFoodCache.set(key, byFoodId);
+  return byFoodId;
 }
 
 export function groupUnitConversion(
