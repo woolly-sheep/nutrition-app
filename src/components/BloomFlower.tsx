@@ -131,6 +131,31 @@ export function BloomFlower({ petals, overall }: Props) {
       })}
       </g>
 
+      {/* #78: a ✓ on each achieved petal so 達成 is distinguishable without
+          relying on the gold colour (over-limit already carries a ring, buds a
+          dashed outline). Drawn upright in absolute coords, white on the gold. */}
+      {petals.map((petal, i) => {
+        if (!petal.achieved) {
+          return null;
+        }
+        const rad = ((ANGLES[i] ?? 0) * Math.PI) / 180;
+        // Just inside the fully-bloomed tip (radius 20 + 2*ry_max = 104).
+        const r = 90;
+        const x = CENTER + r * Math.sin(rad);
+        const y = CENTER_Y - r * Math.cos(rad);
+        return (
+          <path
+            key={`mark-${petal.key}`}
+            d={`M ${x - 3.4} ${y - 0.2} L ${x - 0.8} ${y + 2.6} L ${x + 3.8} ${y - 3.6}`}
+            fill="none"
+            stroke="var(--color-base)"
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        );
+      })}
+
       <circle cx={CENTER} cy={CENTER_Y} r={25} fill="var(--color-surface)" />
       <text
         x={CENTER}
@@ -177,7 +202,7 @@ function ariaLabel(
   const parts = petals.map((p) =>
     p.fulfillment === null
       ? `${p.label}は記録待ち`
-      : `${p.label} ${Math.round(p.fulfillment * 100)}%${p.overLimit ? "（上限超えの推定）" : ""}`,
+      : `${p.label} ${Math.round(p.fulfillment * 100)}%${p.overLimit ? "（上限超えの推定）" : p.achieved ? "（達成）" : ""}`,
   );
   const head =
     overall === null
