@@ -128,7 +128,12 @@ export function AnalysisScreen() {
         achievedCount={summary.achieved.length}
         ulReachedCount={summary.ul_reached.length}
         dgOverCount={summary.dg_over.length}
-        attentionHref={attentionHref}
+        hrefs={{
+          short: "#grp-short",
+          near: "#grp-near",
+          achieved: "#grp-achieved",
+          attention: attentionHref,
+        }}
       />
 
       {summary.ul_reached.length > 0 && (
