@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SUPPLEMENT_NUTRIENTS } from "../../server/api/schemas/supplements";
+import type { SupplementProduct } from "../../server/api/schemas/supplementProducts";
 import {
   computeAmounts,
   nextNutrient,
@@ -9,29 +10,40 @@ import {
 } from "./SupplementAmountFields";
 
 /**
- * Create a supplement product preset (decision-20260724-supplement-products):
- * name + a serving basis (数量 + 単位, e.g. 10錠) + the composition at that
- * basis. Composition is self-reported. On success the parent refreshes the
- * list and closes the form (onCreated).
+ * Create or edit a supplement product preset
+ * (decision-20260724-supplement-products): name + a serving basis (数量 + 単位,
+ * e.g. 10錠) + the composition at that basis. Composition is self-reported.
+ * Passing `product` switches to edit mode (PUT, prefilled); otherwise it
+ * creates (POST). On success the parent refreshes the list and closes (onSaved).
  */
 export function SupplementProductForm({
-  onCreated,
+  product,
+  onSaved,
   onCancel,
 }: {
-  onCreated: () => void;
+  product?: SupplementProduct;
+  onSaved: () => void;
   onCancel: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [servingText, setServingText] = useState("10");
-  const [servingUnit, setServingUnit] = useState("錠");
-  const [rows, setRows] = useState<Draft[]>([
-    { nutrientCode: SUPPLEMENT_NUTRIENTS[0].code, amountText: "" },
-  ]);
+  const isEditing = product !== undefined;
+  const [name, setName] = useState(product?.name ?? "");
+  const [servingText, setServingText] = useState(
+    product ? String(product.serving_count) : "10",
+  );
+  const [servingUnit, setServingUnit] = useState(product?.serving_unit ?? "錠");
+  const [rows, setRows] = useState<Draft[]>(
+    product
+      ? product.amounts.map((a) => ({
+          nutrientCode: a.nutrient_code,
+          amountText: String(a.amount),
+        }))
+      : [{ nutrientCode: SUPPLEMENT_NUTRIENTS[0].code, amountText: "" }],
+  );
   const [error, setError] = useState(false);
 
   const { validAmounts, hasDuplicate } = computeAmounts(rows);
   const serving = Number(servingText);
-  const canCreate =
+  const canSave =
     name.trim() !== "" &&
     Number.isFinite(serving) &&
     serving > 0 &&
@@ -39,27 +51,32 @@ export function SupplementProductForm({
     validAmounts.length > 0 &&
     !hasDuplicate;
 
-  const handleCreate = async () => {
-    if (!canCreate) {
+  const handleSave = async () => {
+    if (!canSave) {
       return;
     }
     setError(false);
     try {
-      const response = await fetch("/api/supplement-products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          serving_count: serving,
-          serving_unit: servingUnit.trim(),
-          amounts: validAmounts,
-        }),
-      });
+      const response = await fetch(
+        isEditing
+          ? `/api/supplement-products/${product.product_id}`
+          : "/api/supplement-products",
+        {
+          method: isEditing ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name.trim(),
+            serving_count: serving,
+            serving_unit: servingUnit.trim(),
+            amounts: validAmounts,
+          }),
+        },
+      );
       if (!response.ok) {
         setError(true);
         return;
       }
-      onCreated();
+      onSaved();
     } catch {
       setError(true);
     }
@@ -67,6 +84,9 @@ export function SupplementProductForm({
 
   return (
     <div style={styles.createBox}>
+      <p style={styles.formHeading}>
+        {isEditing ? "製品を編集" : "製品を登録"}
+      </p>
       <label style={styles.label} htmlFor="product-name">
         製品名
       </label>
@@ -165,11 +185,11 @@ export function SupplementProductForm({
       <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
         <button
           type="button"
-          onClick={() => void handleCreate()}
-          disabled={!canCreate}
-          style={{ ...styles.saveButton, opacity: canCreate ? 1 : 0.5 }}
+          onClick={() => void handleSave()}
+          disabled={!canSave}
+          style={{ ...styles.saveButton, opacity: canSave ? 1 : 0.5 }}
         >
-          製品を登録
+          {isEditing ? "更新" : "製品を登録"}
         </button>
         <button type="button" onClick={onCancel} style={styles.cancelButton}>
           やめる
@@ -177,7 +197,9 @@ export function SupplementProductForm({
       </div>
       {error && (
         <p role="status" style={styles.note}>
-          登録できませんでした。もう一度お試しください。
+          {isEditing
+            ? "更新できませんでした。もう一度お試しください。"
+            : "登録できませんでした。もう一度お試しください。"}
         </p>
       )}
     </div>
@@ -185,6 +207,11 @@ export function SupplementProductForm({
 }
 
 const styles = {
+  formHeading: {
+    fontSize: "14px",
+    fontWeight: 700,
+    margin: "0 0 4px",
+  },
   note: {
     color: "var(--color-subtext)",
     fontSize: "12px",

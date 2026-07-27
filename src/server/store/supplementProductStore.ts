@@ -45,6 +45,33 @@ export async function appendSupplementProduct(
   return product;
 }
 
+/**
+ * Replaces one product's name, serving basis and amounts. product_id and
+ * created_at stay untouched (same identity policy as editing a recipe or a
+ * supplement record). Returns null when the id is unknown.
+ */
+export async function updateSupplementProductRecord(
+  id: string,
+  input: CreateSupplementProductRequest,
+): Promise<SupplementProduct | null> {
+  const records = await readAll();
+  const index = records.findIndex((r) => r.product_id === id);
+  if (index === -1) {
+    return null;
+  }
+  const updated: SupplementProduct = {
+    ...records[index],
+    name: input.name,
+    serving_count: input.serving_count,
+    serving_unit: input.serving_unit,
+    amounts: input.amounts,
+  };
+  const next = [...records];
+  next[index] = updated;
+  await writeAll(next);
+  return updated;
+}
+
 export async function deleteSupplementProduct(id: string): Promise<boolean> {
   const records = await readAll();
   const next = records.filter((r) => r.product_id !== id);

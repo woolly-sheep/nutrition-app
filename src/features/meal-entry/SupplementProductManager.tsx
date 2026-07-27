@@ -24,6 +24,7 @@ export function SupplementProductManager({ date, onLogged }: Props) {
   const [products, setProducts] = useState<readonly SupplementProduct[]>([]);
   const [doseText, setDoseText] = useState<Record<string, string>>({});
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<SupplementProduct | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -87,19 +88,34 @@ export function SupplementProductManager({ date, onLogged }: Props) {
     <div style={styles.wrap}>
       <p style={styles.heading}>登録した製品</p>
 
-      <SupplementProductList
-        products={products}
-        doseText={doseText}
-        onDoseChange={(productId, value) =>
-          setDoseText((prev) => ({ ...prev, [productId]: value }))
-        }
-        onLog={(product) => void handleLog(product)}
-        onDelete={(id) => void handleDeleteProduct(id)}
-      />
+      {editing === null && (
+        <SupplementProductList
+          products={products}
+          doseText={doseText}
+          onDoseChange={(productId, value) =>
+            setDoseText((prev) => ({ ...prev, [productId]: value }))
+          }
+          onLog={(product) => void handleLog(product)}
+          onEdit={(product) => {
+            setCreating(false);
+            setEditing(product);
+          }}
+          onDelete={(id) => void handleDeleteProduct(id)}
+        />
+      )}
 
-      {creating ? (
+      {editing !== null ? (
         <SupplementProductForm
-          onCreated={() => {
+          product={editing}
+          onSaved={() => {
+            setEditing(null);
+            void load();
+          }}
+          onCancel={() => setEditing(null)}
+        />
+      ) : creating ? (
+        <SupplementProductForm
+          onSaved={() => {
             setCreating(false);
             void load();
           }}

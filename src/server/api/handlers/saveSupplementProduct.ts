@@ -29,6 +29,23 @@ export async function saveSupplementProduct(
     input: CreateSupplementProductRequest,
   ) => Promise<SupplementProduct> = appendSupplementProduct,
 ): Promise<SaveSupplementProductResult> {
+  const validated = validateSupplementProductBody(body);
+  if (!validated.ok) {
+    return validated;
+  }
+  const product = await save(validated.value);
+  return { ok: true, product };
+}
+
+type ValidatedProduct =
+  | { ok: true; value: CreateSupplementProductRequest }
+  | { ok: false; problem: ProblemDetails };
+
+/**
+ * Shared validation for the create and edit paths. Product name and serving
+ * unit are user data, so failures return field codes only, never the values.
+ */
+export function validateSupplementProductBody(body: unknown): ValidatedProduct {
   if (typeof body !== "object" || body === null) {
     return { ok: false, problem: validationProblem(["invalid_body"]) };
   }
@@ -62,13 +79,15 @@ export async function saveSupplementProduct(
     return { ok: false, problem: validationProblem(errors) };
   }
 
-  const product = await save({
-    name: (name as string).trim(),
-    serving_count: serving_count as number,
-    serving_unit: (serving_unit as string).trim(),
-    amounts: clean,
-  });
-  return { ok: true, product };
+  return {
+    ok: true,
+    value: {
+      name: (name as string).trim(),
+      serving_count: serving_count as number,
+      serving_unit: (serving_unit as string).trim(),
+      amounts: clean,
+    },
+  };
 }
 
 function validateAmounts(
