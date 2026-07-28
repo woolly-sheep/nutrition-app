@@ -200,11 +200,13 @@ function buildServings(unitOptions: readonly FoodUnitOption[]): ServingChoice[] 
   return servings.slice(0, 3);
 }
 
-// Decorative macro hues — informational, NOT status colours. Teal + sky reuse
-// the palette; fat uses a muted tan kept distinct from the achievement gold.
+// Decorative macro hues — informational, NOT status colours. Teal / clean
+// apricot / sky: an appetising warm for fat that stays clear of any warning red;
+// its orange-apricot tone is deliberately distinct from the yellow achievement
+// gold, and it is never used as a badge.
 const MACRO = {
   protein: "var(--color-primary)",
-  fat: "#c9a66b",
+  fat: "#e8a06a",
   carbohydrate: "var(--color-sky)",
 } as const;
 
