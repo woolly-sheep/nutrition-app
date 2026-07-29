@@ -118,7 +118,9 @@ describe("API flows (e2e through route handlers)", () => {
     for (const [date, mealType, foodId, grams] of [
       ["2026-07-15", "dinner", "food_rice_cooked_white_001", 150],
       ["2026-07-16", "dinner", "food_rice_cooked_white_001", 180],
-      ["2026-07-16", "dinner", "food_kiwi_raw_001", 160],
+      // Different meal type on the same day → a distinct block (same-type saves
+      // now merge into one card, so 2 blocks needs 2 types).
+      ["2026-07-16", "lunch", "food_kiwi_raw_001", 160],
     ] as const) {
       const response = await mealsRoute.POST(
         post("/api/meals", {

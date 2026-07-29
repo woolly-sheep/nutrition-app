@@ -29,13 +29,36 @@ export async function listMeals(date?: string): Promise<MealRecord[]> {
   return meals.filter((meal) => meal.date === date);
 }
 
+/**
+ * Records a meal. When the same day already has a meal of this type, the new
+ * items are folded into that existing record instead of creating a second
+ * card (one 区分 = one block). The original meal_id / recorded_at are kept so
+ * the block keeps its identity; only when no block exists yet is a new one
+ * created.
+ */
 export async function appendMeal(input: CreateMealRequest): Promise<MealRecord> {
+  const meals = await readAll();
+  const existingIndex = meals.findIndex(
+    (meal) => meal.date === input.date && meal.meal_type === input.meal_type,
+  );
+
+  if (existingIndex !== -1) {
+    const existing = meals[existingIndex];
+    const merged: MealRecord = {
+      ...existing,
+      items: [...existing.items, ...input.items],
+    };
+    const next = [...meals];
+    next[existingIndex] = merged;
+    await writeAll(next);
+    return merged;
+  }
+
   const meal: MealRecord = {
     ...input,
     meal_id: `meal_${randomUUID()}`,
     recorded_at: new Date().toISOString(),
   };
-  const meals = await readAll();
   await writeAll([...meals, meal]);
   return meal;
 }

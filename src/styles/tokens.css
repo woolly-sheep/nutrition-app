@@ -27,6 +27,18 @@
   --color-sky-line: rgba(93, 180, 204, 0.5);
 
   /*
+   * Meal-type rails (記録タブ / この日の記録). Decorative time-of-day coding, NOT
+   * a status axis: one teal→deep-sky hue at rising darkness encodes the arc of
+   * the day (朝→昼→夕). 間食 sits OFF that timeline — a muted neutral drawn with
+   * a hollow ring — because it happens at no fixed hour. Never red / never
+   * gold; carries no 不足/上限/warning meaning.
+   */
+  --color-meal-breakfast: #8fd0c4; /* morning — lightest */
+  --color-meal-lunch: #3fb39a; /* midday */
+  --color-meal-dinner: #2a7f97; /* evening — deepest of the arc */
+  --color-meal-snack: #9fb0ac; /* anytime — neutral, off the arc (ring) */
+
+  /*
    * Derived semantics (#86 / #88). The soft-accent trio is a quieter dress
    * for the SAME achievement meaning (still accent-only) — a pale gold ground
    * with gold ink/line instead of a loud solid fill. The emphasis pair is the
