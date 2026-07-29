@@ -19,6 +19,28 @@ const MEAL_TYPE_LABELS: Record<MealType, string> = {
   snack: "間食",
 };
 
+/**
+ * Fixed reading order for the day's blocks: morning → evening, then 間食 last
+ * (off the daylight arc). Keeps この日の記録 stable regardless of save order.
+ */
+const MEAL_TYPE_ORDER: Record<MealType, number> = {
+  breakfast: 0,
+  lunch: 1,
+  dinner: 2,
+  snack: 3,
+};
+
+/**
+ * Time-of-day rail colour (see tokens.css --color-meal-*). Decorative coding,
+ * not a status. 間食 uses a hollow ring to read as "anytime / off the arc".
+ */
+const MEAL_TYPE_RAIL: Record<MealType, string> = {
+  breakfast: "var(--color-meal-breakfast)",
+  lunch: "var(--color-meal-lunch)",
+  dinner: "var(--color-meal-dinner)",
+  snack: "var(--color-meal-snack)",
+};
+
 type EditItem = { foodId: string; displayName: string; gramsText: string };
 
 type Props = {
@@ -100,6 +122,10 @@ export function SavedMealsList({ meals, onChanged }: Props) {
     }
   };
 
+  const sortedMeals = [...meals].sort(
+    (a, b) => MEAL_TYPE_ORDER[a.meal_type] - MEAL_TYPE_ORDER[b.meal_type],
+  );
+
   return (
     <section style={{ marginTop: "28px" }}>
       <h2 style={styles.sectionTitle}>この日の記録</h2>
@@ -107,10 +133,29 @@ export function SavedMealsList({ meals, onChanged }: Props) {
         <p style={styles.subtext}>この日の記録はまだありません。</p>
       ) : (
         <ul style={styles.list}>
-          {meals.map((meal) => (
+          {sortedMeals.map((meal) => (
             <li key={meal.meal_id} style={styles.savedCard}>
+              <span
+                aria-hidden
+                style={{
+                  ...styles.rail,
+                  background: MEAL_TYPE_RAIL[meal.meal_type],
+                }}
+              />
               <div style={styles.savedHead}>
-                <span style={{ fontWeight: 700, fontSize: "13px" }}>
+                <span style={styles.mealLabel}>
+                  <span
+                    aria-hidden
+                    style={{
+                      ...styles.dot,
+                      ...(meal.meal_type === "snack"
+                        ? {
+                            background: "transparent",
+                            border: `1.6px solid ${MEAL_TYPE_RAIL[meal.meal_type]}`,
+                          }
+                        : { background: MEAL_TYPE_RAIL[meal.meal_type] }),
+                    }}
+                  />
                   {MEAL_TYPE_LABELS[meal.meal_type]}
                 </span>
                 {meal.estimated_kcal !== null && (
@@ -119,6 +164,7 @@ export function SavedMealsList({ meals, onChanged }: Props) {
                   </span>
                 )}
               </div>
+              {editingMealId !== meal.meal_id && <div style={styles.hairRule} />}
               {editingMealId === meal.meal_id ? (
                 <div>
                   <ul style={styles.list}>
@@ -251,16 +297,42 @@ const styles = {
   subtext: { color: "var(--color-subtext)", fontSize: "13px", margin: 0 },
   list: { listStyle: "none", margin: 0, padding: 0 },
   savedCard: {
-    padding: "10px 12px",
+    position: "relative",
+    overflow: "hidden",
+    padding: "10px 12px 10px 16px",
     marginBottom: "8px",
     border: "1px solid var(--color-surface)",
     borderRadius: "var(--radius-md)",
+  },
+  rail: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: "4px",
   },
   savedHead: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "baseline",
     gap: "8px",
+  },
+  mealLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    fontWeight: 700,
+    fontSize: "13px",
+  },
+  dot: {
+    width: "8px",
+    height: "8px",
+    borderRadius: "50%",
+    flex: "0 0 auto",
+  },
+  hairRule: {
+    borderTop: "var(--border-hairline)",
+    margin: "6px 0 8px",
   },
   editRow: {
     display: "flex",
