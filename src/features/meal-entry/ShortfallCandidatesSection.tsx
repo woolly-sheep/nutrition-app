@@ -44,7 +44,7 @@ export function ShortfallCandidatesSection({
                   estimatedKcal: candidate.estimated_kcal,
                 })
               }
-              aria-label={`${candidate.display_name}を追加。${candidate.target_nutrient_name}不足分の約${Math.round(candidate.percent_of_shortfall)}パーセント`}
+              aria-label={`${candidate.display_name}を追加。${candidate.target_nutrient_name}${shortfallLabel(candidate.percent_of_shortfall)}`}
               style={chipStyles.chip}
             >
               <span style={chipStyles.chipName}>
@@ -62,8 +62,7 @@ export function ShortfallCandidatesSection({
               <span style={chipStyles.chipMeta}>
                 {candidate.portion_label ?? `${candidate.portion_g}g`}
                 {" · "}
-                {candidate.target_nutrient_name}の約
-                {Math.round(candidate.percent_of_shortfall)}%
+                {shortfallLabel(candidate.percent_of_shortfall)}
               </span>
             </button>
           </li>
@@ -82,6 +81,18 @@ export function ShortfallCandidatesSection({
 function shortNutrientTag(name: string): string {
   const withoutPrefix = name.replace(/^ビタミン/, "");
   return withoutPrefix.length > 0 ? withoutPrefix : name;
+}
+
+/**
+ * Shortfall-coverage phrase. percent_of_shortfall = 含有量 ÷ 残り不足分 × 100,
+ * so nutrients with tiny requirements (B12 等) yield absurd figures like
+ * 10000% for foods that pack the nutrient. Cap the display at 100% ("誇張し
+ * ない" — same principle as the bloom / bars) so the chip reads as a helpful
+ * fact, not a broken number.
+ */
+function shortfallLabel(percentOfShortfall: number): string {
+  const percent = Math.round(percentOfShortfall);
+  return percent >= 100 ? "不足分の100%以上" : `不足分の約${percent}%`;
 }
 
 const styles = {

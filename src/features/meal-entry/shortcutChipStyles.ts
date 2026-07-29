@@ -30,6 +30,7 @@ export const chipStyles = {
     gap: "2px",
     minHeight: "var(--tap-target-min)",
     maxWidth: "180px",
+    overflow: "hidden",
     padding: "8px 12px",
     border: "1px solid var(--color-primary)",
     borderRadius: "var(--radius-pill)",
@@ -54,10 +55,13 @@ export const chipStyles = {
   },
   chipPlus: { flex: "0 0 auto", fontSize: "13px", lineHeight: 1 },
   chipMeta: {
+    maxWidth: "100%",
     fontSize: "12px",
     fontWeight: 400,
     color: "var(--color-subtext)",
     whiteSpace: "nowrap" as const,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   },
   chipTag: {
     flex: "0 0 auto",
